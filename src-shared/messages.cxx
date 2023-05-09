@@ -1,4 +1,5 @@
 #include "../include-shared/messages.hpp"
+
 #include "../include-shared/util.hpp"
 
 // ================================================
@@ -207,14 +208,26 @@ void SenderToReceiver_OTEncryptedValues_Message::serialize(
   // Add message type.
   data.push_back((char)MessageType::SenderToReceiver_OTEncryptedValues_Message);
 
-  // Add fields.
-  put_string(this->e0, data);
-  put_string(this->e1, data);
+  // Add the # of encrypted values
+  int idx = data.size();
+  // Resize data to have space for the value of encryptions.size(). Since data
+  // contains data of 1 byte each, we just add sizeof(size_t) more elements
+  data.resize(idx + sizeof(size_t));
+  size_t num_encryptions = encryptions.size();
+  // Copy num_encryptions into data[idx]
+  std::memcpy(&data[idx], &num_encryptions, sizeof(size_t));
 
-  std::string iv0 = byteblock_to_string(this->iv0);
-  put_string(iv0, data);
-  std::string iv1 = byteblock_to_string(this->iv1);
-  put_string(iv1, data);
+  // Put each encryption.
+  for (auto &s : encryptions) {
+    put_string(s, data);
+  }
+
+  // Put each IV. Note that the # of encryptions = # of IVs, so there's no need
+  // to add the number for this
+  for (auto &iv_block : ivs) {
+    std::string iv_string = byteblock_to_string(iv_block);
+    put_string(iv_string, data);
+  }
 }
 
 int SenderToReceiver_OTEncryptedValues_Message::deserialize(
@@ -222,18 +235,22 @@ int SenderToReceiver_OTEncryptedValues_Message::deserialize(
   // Check correct message type.
   assert(data[0] == MessageType::SenderToReceiver_OTEncryptedValues_Message);
 
-  // Get fields.
-  int n = 1;
-  n += get_string(&this->e0, data, n);
-  n += get_string(&this->e1, data, n);
+  // Get length
+  size_t num_encryptions;
+  std::memcpy(&num_encryptions, &data[1], sizeof(size_t));
 
-  std::string iv0;
-  n += get_string(&iv0, data, n);
-  this->iv0 = string_to_byteblock(iv0);
-
-  std::string iv1;
-  n += get_string(&iv1, data, n);
-  this->iv1 = string_to_byteblock(iv1);
+  // Get fields. Note that n is the current index into data
+  int n = 1 + sizeof(size_t);
+  for (int i = 0; i < num_encryptions; i++) {
+    std::string s;
+    n += get_string(&s, data, n);
+    encryptions.push_back(s);
+  }
+  for (int i = 0; i < num_encryptions; i++) {
+    std::string iv;
+    n += get_string(&iv, data, n);
+    ivs.push_back(string_to_byteblock(iv));
+  }
   return n;
 }
 

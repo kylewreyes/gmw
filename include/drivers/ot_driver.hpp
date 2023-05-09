@@ -34,7 +34,7 @@ public:
            std::shared_ptr<CryptoDriver> crypto_driver,
            std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys);
 
-  void OT_send(std::string m0, std::string m1);
+  void OT_send(std::vector<std::string> m);
   std::string OT_recv(int choice_bit);
 
 private:

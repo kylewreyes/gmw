@@ -98,11 +98,9 @@ struct ReceiverToSender_OTPublicValue_Message : public Serializable {
 };
 
 struct SenderToReceiver_OTEncryptedValues_Message : public Serializable {
-  std::string e0;
-  std::string e1;
+  std::vector<std::string> encryptions;
   // we need to send IVs outputted by AES_encrypt
-  CryptoPP::SecByteBlock iv0;
-  CryptoPP::SecByteBlock iv1;
+  std::vector<CryptoPP::SecByteBlock> ivs;
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);

@@ -20,6 +20,8 @@
 #include "crypto++/osrng.h"
 #include "crypto++/rsa.h"
 
+auto& mod_exp = CryptoPP::ModularExponentiation;
+
 /*
  * Constructor
  */
@@ -35,15 +37,16 @@ OTDriver::OTDriver(
 }
 
 /*
- * Send either m0 or m1 using OT. This function should:
+ * Send one of m[0], ..., m[n - 1] using OT, where n = m.size(). This function
+ * should:
  * 1) Sample a public DH value and send it to the receiver
  * 2) Receive the receiver's public value
- * 3) Encrypt m0 and m1 using different keys
+ * 3) Encrypt m[0], ..., m[n - 1] using different keys
  * 4) Send the encrypted values
  * You may find `byteblock_to_integer` and `integer_to_byteblock` useful
  * Disconnect and throw errors only for invalid MACs
  */
-void OTDriver::OT_send(std::string m0, std::string m1) {
+void OTDriver::OT_send(std::vector<std::string> m) {
   // Implement me!
   auto& mod_inv = CryptoPP::EuclideanMultiplicativeInverse;
   auto [dh_obj, dh_priv_key, dh_pub_key] = crypto_driver->DH_initialize();
@@ -67,28 +70,26 @@ void OTDriver::OT_send(std::string m0, std::string m1) {
   ReceiverToSender_OTPublicValue_Message receiver_pub_key_msg;
   receiver_pub_key_msg.deserialize(plain_bytes);
 
-  // 3) Encrypt m0 and m1 using different keys
-  auto k0_to_hash = crypto_driver->DH_generate_shared_key(
-      dh_obj, dh_priv_key, receiver_pub_key_msg.public_value);
-  SecByteBlock k0 = crypto_driver->AES_generate_key(k0_to_hash);
-  auto [e0, iv0] = crypto_driver->AES_encrypt(k0, m0);
-
+  // 3) Encrypt m[0], ..., m[n - 1] using different keys
   CryptoPP::Integer B = byteblock_to_integer(receiver_pub_key_msg.public_value);
   CryptoPP::Integer A = byteblock_to_integer(dh_pub_key);
   CryptoPP::Integer a = byteblock_to_integer(dh_priv_key);
-  CryptoPP::Integer B_times_A_inv = B * mod_inv(A, DL_P) % DL_P;
 
-  auto k1_to_hash = crypto_driver->DH_generate_shared_key(
-      dh_obj, dh_priv_key, integer_to_byteblock(B_times_A_inv));
-  SecByteBlock k1 = crypto_driver->AES_generate_key(k1_to_hash);
-  auto [e1, iv1] = crypto_driver->AES_encrypt(k1, m1);
+  SenderToReceiver_OTEncryptedValues_Message ot_msg;
+  for (int i = 0; i < m.size(); i++) {
+    // HKDF input: (B / A^i)^a
+    CryptoPP::Integer k_i = (B * mod_inv(mod_exp(A, i, DL_P), DL_P)) % DL_P;
+
+    auto k_to_hash = crypto_driver->DH_generate_shared_key(
+        dh_obj, dh_priv_key, integer_to_byteblock(k_i));
+    SecByteBlock k = crypto_driver->AES_generate_key(k_to_hash);
+    auto [e, iv] = crypto_driver->AES_encrypt(k, m[i]);
+
+    ot_msg.encryptions.push_back(e);
+    ot_msg.ivs.push_back(iv);
+  }
 
   // 4) Send the encrypted values
-  SenderToReceiver_OTEncryptedValues_Message ot_msg;
-  ot_msg.e0 = e0;
-  ot_msg.iv0 = iv0;
-  ot_msg.e1 = e1;
-  ot_msg.iv1 = iv1;
   bytes = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &ot_msg);
   network_driver->send(bytes);
 }
@@ -103,7 +104,6 @@ void OTDriver::OT_send(std::string m0, std::string m1) {
  */
 std::string OTDriver::OT_recv(int choice_bit) {
   // Implement me!
-
   // 1) Read the sender's public value
   std::vector<unsigned char> bytes = network_driver->read();
   auto [plain_bytes, verified] =
@@ -119,12 +119,11 @@ std::string OTDriver::OT_recv(int choice_bit) {
 
   // 2) Respond with our public value that depends on our choice bit
   auto [dh_obj, dh_priv_key, dh_pub_key] = crypto_driver->DH_initialize();
+
   ReceiverToSender_OTPublicValue_Message receiver_pub_key_msg;
-  if (choice_bit == 1) {
-    CryptoPP::Integer B = byteblock_to_integer(dh_pub_key);
-    B = (A * B) % DL_P;
-    dh_pub_key = integer_to_byteblock(B);
-  }
+  CryptoPP::Integer B = byteblock_to_integer(dh_pub_key);
+  B = (B * mod_exp(A, choice_bit, DL_P)) % DL_P;
+  dh_pub_key = integer_to_byteblock(B);
   receiver_pub_key_msg.public_value = dh_pub_key;
   bytes =
       crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &receiver_pub_key_msg);
@@ -146,8 +145,6 @@ std::string OTDriver::OT_recv(int choice_bit) {
       dh_obj, dh_priv_key, sender_pub_key_msg.public_value);
   SecByteBlock kc = crypto_driver->AES_generate_key(kc_to_hash);
 
-  if (choice_bit == 0) {
-    return crypto_driver->AES_decrypt(kc, ot_msg.iv0, ot_msg.e0);
-  }
-  return crypto_driver->AES_decrypt(kc, ot_msg.iv1, ot_msg.e1);
+  return crypto_driver->AES_decrypt(kc, ot_msg.ivs[choice_bit],
+                                    ot_msg.encryptions[choice_bit]);
 }

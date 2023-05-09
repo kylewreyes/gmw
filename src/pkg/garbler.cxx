@@ -103,10 +103,10 @@ std::string GarblerClient::run(std::vector<int> input) {
   for (int i = 0; i < this->circuit.evaluator_input_length; i++) {
     int offset = this->circuit.garbler_input_length + i;
 
-    std::string m0 = byteblock_to_string(garbled_labels.zeros.at(offset).value);
-    std::string m1 = byteblock_to_string(garbled_labels.ones.at(offset).value);
-
-    this->ot_driver->OT_send(m0, m1);
+    std::vector<std::string> msgs;
+    msgs.push_back(byteblock_to_string(garbled_labels.zeros.at(offset).value));
+    msgs.push_back(byteblock_to_string(garbled_labels.ones.at(offset).value));
+    this->ot_driver->OT_send(msgs);
   }
 
   // 5) Receive the final labels, recover and reveal final output
