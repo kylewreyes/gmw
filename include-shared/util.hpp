@@ -38,5 +38,16 @@ void print_key_as_hex(const CryptoPP::SecByteBlock &block);
 // Splitter.
 std::vector<std::string> string_split(std::string str, char delimiter);
 
+// Input struct from a file
+struct InitialWireInput
+{
+    int party_index;
+    int value;
+};
+
 // Input parser.
-std::vector<int> parse_input(std::string input_file);
+std::vector<InitialWireInput> parse_input(std::string input_file);
+
+// Address parser
+std::vector<std::string> parse_addrs(std::string addr_file);
+

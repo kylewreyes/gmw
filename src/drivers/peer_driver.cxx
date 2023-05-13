@@ -11,6 +11,12 @@ PeerDriver::PeerDriver(int my_party, std::vector<std::string> addrs)
 
     // TODO: Need to populate the network drivers
     this->crypto_driver = std::make_shared<CryptoDriver>();
+
+    // std::shared_ptr<NetworkDriver> network_driver =
+    //     std::make_shared<NetworkDriverImpl>();
+    // network_driver->listen(port);
+    // std::shared_ptr<CryptoDriver> crypto_driver =
+    //     std::make_shared<CryptoDriver>();
 }
 
 template <typename T, typename K>

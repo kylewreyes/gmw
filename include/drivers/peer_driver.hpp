@@ -1,6 +1,7 @@
 #include <vector>
 
 #include "../../include/drivers/network_driver.hpp"
+#include "../../include/drivers/crypto_driver.hpp"
 
 /*
 
@@ -80,9 +81,9 @@ public:
      * A connection is not made to oneself, i.e. addrs[my_party] is not connected to.
      *
      * Consider the following:
-     * 
+     *
      * PeerDriver pd(2, {"localhost:1000", "localhost:1001", "localhost:1002"})
-     * 
+     *
      * In this example, party 2 will connect to localhost:1000 and localhost:10001, but not
      * localhost:1002.
      */
@@ -90,17 +91,17 @@ public:
 
     /*
      * startInThread enables asynchronous, one-time bidirectional communication between two parties.
-     * 
+     *
      * T is the type of the expected return value from the communication; K is the type of the
      * payload that is sent to the other party.
-     * 
+     *
      * Example usage:
-     * 
+     *
      * auto f = PeerDriver::startInThread(1, SEND_OT, c_j)
      * f.get() // 1's response value.
      */
-    template<typename T, typename K>
-    std::future<T> startInThread(int other, SendType send_type, K payload);
+    template <typename T, typename K>
+    std::future<T> start_in_thread(int other, SendType send_type, K payload);
 
 private:
     // The party-index of this party, from [0, num_parties)
@@ -108,7 +109,17 @@ private:
     // The addresses of the peers in the computation, including our own address.
     std::vector<std::string> addrs;
 
+    // The secret keys for each party, excluding my_party
+    std::vector<std::tuple<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>> keys;
+
     // A vector of NetworkDriver's to communiate with peers.
     // There is no NetworkDriver associated with network_drivers[this->my_party].
     std::vector<NetworkDriver> network_drivers;
+
+    // I think we can use one CryptoDriver instance here
+    std::shared_ptr<CryptoDriver> crypto_driver;
+
+    // A helper function for startInThread
+    template <typename T, typename K>
+    std::future<T> do_start_in_thread(int other, SendType send_type, K payload);
 };
