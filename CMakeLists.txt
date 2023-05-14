@@ -6,7 +6,6 @@ set(PARTICIPANT_EXEC_NAME participant)
 set(OTTEST_EXEC_NAME ot_test)
 set(LIBRARY_NAME gmw_app_lib)
 set(LIBRARY_NAME_SHARED gmw_app_lib_shared)
-# set(LIBRARY_NAME_TA yaos_app_lib_ta)
 
 # packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -43,43 +42,9 @@ add_library(${LIBRARY_NAME} ${SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include-shared ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${LIBRARY_NAME_SHARED})
 
-<<<<<<< HEAD
-# add ta libraries
-if ( "$ENV{CS1515_TA_MODE}" STREQUAL "on" )
-  set(SOURCES_TA
-    src-ta/pkg/garbler.cxx
-    src-ta/pkg/evaluator.cxx
-    src-ta/drivers/cli_driver.cxx
-    src-ta/drivers/crypto_driver.cxx
-    src-ta/drivers/network_driver.cxx
-    src-ta/drivers/ot_driver.cxx)
-  add_library(${LIBRARY_NAME_TA} ${SOURCES_TA})
-  target_include_directories(${LIBRARY_NAME_TA} PUBLIC ${PROJECT_SOURCE_DIR}/include-shared ${PROJECT_SOURCE_DIR}/include-ta)
-  target_link_libraries(${LIBRARY_NAME_TA} PRIVATE ${LIBRARY_NAME_SHARED})
-endif()
-
-# add garbler executables
-# if ( "$ENV{CS1515_TA_MODE}" STREQUAL "on" )
-#   add_executable(${GARBLER_EXEC_NAME} src-ta/cmd/garbler.cxx)
-#   target_link_libraries(${GARBLER_EXEC_NAME} PRIVATE ${LIBRARY_NAME_TA})
-# else()
-#   add_executable(${GARBLER_EXEC_NAME} src/cmd/garbler.cxx)
-#   target_link_libraries(${GARBLER_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
-# endif()
-
-# add evaluator executables
-if ( "$ENV{CS1515_TA_MODE}" STREQUAL "on" )
-  add_executable(${EVALUATOR_EXEC_NAME} src-ta/cmd/participant.cxx)
-  target_link_libraries(${EVALUATOR_EXEC_NAME} PRIVATE ${LIBRARY_NAME_TA})
-else()
-  add_executable(${EVALUATOR_EXEC_NAME} src/cmd/participanet.cxx)
-  target_link_libraries(${EVALUATOR_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
-endif()
-=======
 # add participant executable
 add_executable(${PARTICIPANT_EXEC_NAME} src/cmd/participant.cxx)
 target_link_libraries(${PARTICIPANT_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
->>>>>>> b56b47e (Fix bugs in CMake and NetworkDriver)
 
 # add ot test executables
 add_executable(${OTTEST_EXEC_NAME} src/cmd/ot_test.cxx)
