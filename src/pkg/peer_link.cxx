@@ -1,4 +1,3 @@
-#include "../../include/pkg/peer_client.hpp"
 #include "../../include-shared/constants.hpp"
 #include "../../include-shared/util.hpp"
 #include "../../include-shared/logger.hpp"
@@ -46,6 +45,8 @@ void PeerLink::HandleKeyExchange()
 
   this->AES_key = keys.first;
   this->HMAC_key = keys.second;
+
+  std::cout << "party " << this->my_party << "got AES_key to be " << byteblock_to_string(this->AES_key) << " and hmac to be " << byteblock_to_string(this->HMAC_key) << std::endl;
 }
 
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
