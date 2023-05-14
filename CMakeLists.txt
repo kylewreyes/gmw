@@ -35,11 +35,10 @@ target_link_libraries(${LIBRARY_NAME_SHARED} PRIVATE ${CURSES_LIBRARIES})
 
 # add student libraries
 set(SOURCES
-  src/pkg/garbler.cxx
-  src/pkg/evaluator.cxx
   src/drivers/cli_driver.cxx
   src/drivers/crypto_driver.cxx
   src/drivers/network_driver.cxx
+  src/drivers/share_driver.cxx
   src/drivers/ot_driver.cxx)
 add_library(${LIBRARY_NAME} ${SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include-shared ${PROJECT_SOURCE_DIR}/include)
