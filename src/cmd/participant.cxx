@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <unordered_map>
 
 #include "../../include-shared/circuit.hpp"
 #include "../../include-shared/logger.hpp"
@@ -41,7 +42,13 @@ int main(int argc, char *argv[])
   // ==========================
   // CONNECT TO PEERS
   // ==========================
-  std::shared_ptr<NetworkDriver> network_driver = std::make_shared<NetworkDriverImpl>();
+  std::unordered_map<std::string, int> addr_mapping;
+  for (int i = 0; i < addrs.size(); i++)
+  {
+    addr_mapping[addrs[i]] = i;
+  }
+
+  std::shared_ptr<NetworkDriver> network_driver = std::make_shared<NetworkDriverImpl>(addr_mapping);
   std::shared_ptr<CryptoDriver> crypto_driver = std::make_shared<CryptoDriver>();
 
   PeerLink pl(0, 0, "", 0, network_driver, crypto_driver);
