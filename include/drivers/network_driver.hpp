@@ -28,6 +28,7 @@ class NetworkDriverImpl : public NetworkDriver {
   std::string get_remote_info(int other_party);
 
  private:
+ // TODO: Make sure we're consistent with how we format the strings
   std::unordered_map<std::string, int> addresses;
   // Sharing io_context's allow for performance benefit when doing async IO
   boost::asio::io_context io_context;
