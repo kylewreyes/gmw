@@ -92,7 +92,7 @@ std::vector<unsigned char> NetworkDriverImpl::read(int other_party) {
   // read message
   std::vector<unsigned char> data;
   data.resize(length);
-  boost::asio::read(sockets[other_party], boost::asio::buffer(data),
+  boost::asio::read(*sockets[other_party], boost::asio::buffer(data),
                     boost::asio::transfer_exactly(length), error);
   if (error) {
     throw std::runtime_error("Received EOF.");

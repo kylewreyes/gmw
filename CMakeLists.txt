@@ -2,11 +2,11 @@ cmake_minimum_required(VERSION 3.10)
 
 # project details
 project(GMWApp VERSION 1.0)
-set(PARTICIPANT_NAME gmw_participant)
+set(PARTICIPANT_EXEC_NAME participant)
 set(OTTEST_EXEC_NAME ot_test)
 set(LIBRARY_NAME gmw_app_lib)
 set(LIBRARY_NAME_SHARED gmw_app_lib_shared)
-set(LIBRARY_NAME_TA yaos_app_lib_ta)
+# set(LIBRARY_NAME_TA yaos_app_lib_ta)
 
 # packages
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/")
@@ -43,6 +43,7 @@ add_library(${LIBRARY_NAME} ${SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include-shared ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${LIBRARY_NAME_SHARED})
 
+<<<<<<< HEAD
 # add ta libraries
 if ( "$ENV{CS1515_TA_MODE}" STREQUAL "on" )
   set(SOURCES_TA
@@ -74,15 +75,15 @@ else()
   add_executable(${EVALUATOR_EXEC_NAME} src/cmd/participanet.cxx)
   target_link_libraries(${EVALUATOR_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
 endif()
+=======
+# add participant executable
+add_executable(${PARTICIPANT_EXEC_NAME} src/cmd/participant.cxx)
+target_link_libraries(${PARTICIPANT_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
+>>>>>>> b56b47e (Fix bugs in CMake and NetworkDriver)
 
 # add ot test executables
-if ( "$ENV{CS1515_TA_MODE}" STREQUAL "on" )
-  add_executable(${OTTEST_EXEC_NAME} src-ta/cmd/ot_test.cxx)
-  target_link_libraries(${OTTEST_EXEC_NAME} PRIVATE ${LIBRARY_NAME_TA})
-else()
-  add_executable(${OTTEST_EXEC_NAME} src/cmd/ot_test.cxx)
-  target_link_libraries(${OTTEST_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
-endif()
+add_executable(${OTTEST_EXEC_NAME} src/cmd/ot_test.cxx)
+target_link_libraries(${OTTEST_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
 
 # properties
 set_target_properties(
