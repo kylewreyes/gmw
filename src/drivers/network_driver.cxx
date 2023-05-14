@@ -1,7 +1,7 @@
+#include "../../include/drivers/network_driver.hpp"
+
 #include <stdexcept>
 #include <vector>
-
-#include "../../include/drivers/network_driver.hpp"
 
 using namespace boost::asio;
 using ip::tcp;
@@ -9,8 +9,11 @@ using ip::tcp;
 /**
  * Constructor. Sets up IO context and socket.
  */
-NetworkDriverImpl::NetworkDriverImpl() : io_context() {
-  this->socket = std::make_shared<tcp::socket>(io_context);
+NetworkDriverImpl::NetworkDriverImpl(std::unordered_map<std::string, int> addresses)
+    : addresses{addresses}, io_context() {}
+
+NetworkDriverImpl::~NetworkDriverImpl() {
+  io_context.stop();
 }
 
 /**
@@ -19,7 +22,10 @@ NetworkDriverImpl::NetworkDriverImpl() : io_context() {
  */
 void NetworkDriverImpl::listen(int port) {
   tcp::acceptor acceptor(this->io_context, tcp::endpoint(tcp::v4(), port));
-  acceptor.accept(*this->socket);
+  auto s = std::make_shared<tcp::socket>(io_context);
+  acceptor.accept(*s);
+  int party_num = s->remote_endpoint().address().to_string();
+  sockets[party_num] = s;
 }
 
 /**
@@ -27,31 +33,38 @@ void NetworkDriverImpl::listen(int port) {
  * @param address Address to connect to.
  * @param port Port to conect to.
  */
-void NetworkDriverImpl::connect(int other_party, std::string address, int port) {
-  if (address == "localhost")
-    address = "127.0.0.1";
-  
-  this->socket->connect(
-      tcp::endpoint(boost::asio::ip::address::from_string(address), port));
+void NetworkDriverImpl::connect(int other_party, std::string address,
+                                int port) {
+  if (address == "localhost") address = "127.0.0.1";
+
+  std::shared_ptr<boost::asio::ip::tcp::socket> s
+
+  auto it = sockets.find(other_party);
+  if (it != sockets.end()) {
+    s = it->second;
+  } else {
+    auto s = std::make_shared<tcp::socket>(io_context);
+  }
+
+  s->connect(tcp::endpoint(boost::asio::ip::address::from_string(addresses[other_party]), port));
 }
 
 /**
  * Disconnect graceefully.
  */
-void NetworkDriverImpl::disconnect() {
-  this->socket->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-  this->socket->close();
-  this->io_context.stop();
+void NetworkDriverImpl::disconnect(int other_party) {
+  sockets[i]->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+  sockets[i]->close();
 }
 
 /**
  * Sends a fixed amount of data by sending length first.
  * @param data Bytes of data to send.
  */
-void NetworkDriverImpl::send(std::vector<unsigned char> data) {
+void NetworkDriverImpl::send(int other_party, std::vector<unsigned char> data) {
   int length = htonl(data.size());
-  boost::asio::write(*this->socket, boost::asio::buffer(&length, sizeof(int)));
-  boost::asio::write(*this->socket, boost::asio::buffer(data));
+  boost::asio::write(*sockets[other_party], boost::asio::buffer(&length, sizeof(int)));
+  boost::asio::write(*sockets[other_party], boost::asio::buffer(data));
 }
 
 /**
@@ -59,11 +72,11 @@ void NetworkDriverImpl::send(std::vector<unsigned char> data) {
  * @return std::vector<unsigned char> data read.
  * @throws error when eof.
  */
-std::vector<unsigned char> NetworkDriverImpl::read() {
+std::vector<unsigned char> NetworkDriverImpl::read(int other_party) {
   // read length
   int length;
   boost::system::error_code error;
-  boost::asio::read(*this->socket, boost::asio::buffer(&length, sizeof(int)),
+  boost::asio::read(*sockets[other_party], boost::asio::buffer(&length, sizeof(int)),
                     boost::asio::transfer_exactly(sizeof(int)), error);
   if (error) {
     throw std::runtime_error("Received EOF.");
@@ -84,7 +97,7 @@ std::vector<unsigned char> NetworkDriverImpl::read() {
 /**
  * Get socket info as string.
  */
-std::string NetworkDriverImpl::get_remote_info() {
-  return this->socket->remote_endpoint().address().to_string() + ":" +
+std::string NetworkDriverImpl::get_remote_info(int other_party) {
+  return sockets[other_party]->remote_endpoint().address().to_string() + ":" +
          std::to_string(this->socket->remote_endpoint().port());
 }
