@@ -116,11 +116,13 @@ int InitialShare_Message::deserialize(std::vector<unsigned char> &data)
   return n;
 }
 
-void Nop_Message::serialize(std::vector<unsigned char> &data) {
+void Nop_Message::serialize(std::vector<unsigned char> &data)
+{
   data.push_back((char)MessageType::InitialShare_Message);
 }
 
-int Nop_Message::deserialize(std::vector<unsigned char> &data) {
+int Nop_Message::deserialize(std::vector<unsigned char> &data)
+{
   assert(data[0] == MessageType::Nop_Message);
   return 1;
 }
@@ -305,170 +307,5 @@ int SenderToReceiver_OTEncryptedValues_Message::deserialize(
     n += get_string(&iv, data, n);
     ivs.push_back(string_to_byteblock(iv));
   }
-  return n;
-}
-
-// ================================================
-// GARBLED CIRCUITS
-// ================================================
-
-void GarblerToEvaluator_GarbledTables_Message::serialize(
-    std::vector<unsigned char> &data)
-{
-  // Add message type.
-  data.push_back((char)MessageType::GarblerToEvaluator_GarbledTables_Message);
-
-  // Put length of garbled tables.
-  int idx = data.size();
-  data.resize(idx + sizeof(size_t));
-  size_t num_tables = this->garbled_tables.size();
-  std::memcpy(&data[idx], &num_tables, sizeof(size_t));
-
-  // Put each table.
-  for (int i = 0; i < num_tables; i++)
-  {
-    // Put num entries.
-    CryptoPP::Integer num_entries = this->garbled_tables[i].entries.size();
-    put_integer(num_entries, data);
-    for (int j = 0; j < num_entries; j++)
-    {
-      std::string entry =
-          byteblock_to_string(this->garbled_tables[i].entries[j]);
-      put_string(entry, data);
-    }
-  }
-}
-
-int GarblerToEvaluator_GarbledTables_Message::deserialize(
-    std::vector<unsigned char> &data)
-{
-  // Check correct message type.
-  assert(data[0] == MessageType::GarblerToEvaluator_GarbledTables_Message);
-
-  // Get length
-  size_t num_tables;
-  std::memcpy(&num_tables, &data[1], sizeof(size_t));
-
-  // Get fields.
-  int n = 1 + sizeof(size_t);
-  for (int i = 0; i < num_tables; i++)
-  {
-    GarbledGate gate;
-    CryptoPP::Integer num_entries;
-    n += get_integer(&num_entries, data, n);
-    for (int j = 0; j < num_entries; j++)
-    {
-      std::string entry;
-      n += get_string(&entry, data, n);
-      gate.entries.push_back(string_to_byteblock(entry));
-    }
-    this->garbled_tables.push_back(gate);
-  }
-  return n;
-}
-
-void GarblerToEvaluator_GarblerInputs_Message::serialize(
-    std::vector<unsigned char> &data)
-{
-  // Add message type.
-  data.push_back((char)MessageType::GarblerToEvaluator_GarblerInputs_Message);
-
-  // Put length of garbled inputs.
-  int idx = data.size();
-  data.resize(idx + sizeof(size_t));
-  size_t num_inputs = this->garbler_inputs.size();
-  std::memcpy(&data[idx], &num_inputs, sizeof(size_t));
-
-  // Put each table.
-  for (int i = 0; i < num_inputs; i++)
-  {
-    std::string entry = byteblock_to_string(this->garbler_inputs[i].value);
-    put_string(entry, data);
-  }
-}
-
-int GarblerToEvaluator_GarblerInputs_Message::deserialize(
-    std::vector<unsigned char> &data)
-{
-  // Check correct message type.
-  assert(data[0] == MessageType::GarblerToEvaluator_GarblerInputs_Message);
-
-  // Get length
-  size_t num_inputs;
-  std::memcpy(&num_inputs, &data[1], sizeof(size_t));
-
-  // Get fields.
-  int n = 1 + sizeof(size_t);
-  this->garbler_inputs.resize(num_inputs);
-  for (int i = 0; i < num_inputs; i++)
-  {
-    std::string entry;
-    n += get_string(&entry, data, n);
-    this->garbler_inputs[i].value = string_to_byteblock(entry);
-  }
-  return n;
-}
-
-void EvaluatorToGarbler_FinalLabels_Message::serialize(
-    std::vector<unsigned char> &data)
-{
-  // Add message type.
-  data.push_back((char)MessageType::EvaluatorToGarbler_FinalLabels_Message);
-
-  // Put length of garbled inputs.
-  int idx = data.size();
-  data.resize(idx + sizeof(size_t));
-  size_t num_labels = this->final_labels.size();
-  std::memcpy(&data[idx], &num_labels, sizeof(size_t));
-
-  // Put each table.
-  for (int i = 0; i < num_labels; i++)
-  {
-    std::string entry = byteblock_to_string(this->final_labels[i].value);
-    put_string(entry, data);
-  }
-}
-
-int EvaluatorToGarbler_FinalLabels_Message::deserialize(
-    std::vector<unsigned char> &data)
-{
-  // Check correct message type.
-  assert(data[0] == MessageType::EvaluatorToGarbler_FinalLabels_Message);
-
-  // Get length
-  size_t num_labels;
-  std::memcpy(&num_labels, &data[1], sizeof(size_t));
-
-  // Get fields.
-  int n = 1 + sizeof(size_t);
-  this->final_labels.resize(num_labels);
-  for (int i = 0; i < num_labels; i++)
-  {
-    std::string entry;
-    n += get_string(&entry, data, n);
-    this->final_labels[i].value = string_to_byteblock(entry);
-  }
-  return n;
-}
-
-void GarblerToEvaluator_FinalOutput_Message::serialize(
-    std::vector<unsigned char> &data)
-{
-  // Add message type.
-  data.push_back((char)MessageType::GarblerToEvaluator_FinalOutput_Message);
-
-  // Add fields.
-  put_string(this->final_output, data);
-}
-
-int GarblerToEvaluator_FinalOutput_Message::deserialize(
-    std::vector<unsigned char> &data)
-{
-  // Check correct message type.
-  assert(data[0] == MessageType::GarblerToEvaluator_FinalOutput_Message);
-
-  // Get fields.
-  int n = 1;
-  n += get_string(&this->final_output, data, n);
   return n;
 }

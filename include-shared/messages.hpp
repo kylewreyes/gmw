@@ -29,10 +29,6 @@ namespace MessageType
     SenderToReceiver_OTPublicValue_Message = 3,
     ReceiverToSender_OTPublicValue_Message = 4,
     SenderToReceiver_OTEncryptedValues_Message = 5,
-    GarblerToEvaluator_GarbledTables_Message = 6,
-    GarblerToEvaluator_GarblerInputs_Message = 7,
-    EvaluatorToGarbler_FinalLabels_Message = 8,
-    GarblerToEvaluator_FinalOutput_Message = 9,
 
     InitialShare_Message = 10,
     Nop_Message = 11,
