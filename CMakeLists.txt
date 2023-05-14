@@ -3,7 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 # project details
 project(GMWApp VERSION 1.0)
 set(PARTICIPANT_EXEC_NAME participant)
-set(OTTEST_EXEC_NAME ot_test)
 set(LIBRARY_NAME gmw_app_lib)
 set(LIBRARY_NAME_SHARED gmw_app_lib_shared)
 
@@ -36,8 +35,7 @@ set(SOURCES
   src/drivers/cli_driver.cxx
   src/drivers/crypto_driver.cxx
   src/drivers/network_driver.cxx
-  src/drivers/share_driver.cxx
-  src/drivers/ot_driver.cxx)
+  src/drivers/share_driver.cxx)
 add_library(${LIBRARY_NAME} ${SOURCES})
 target_include_directories(${LIBRARY_NAME} PUBLIC ${PROJECT_SOURCE_DIR}/include-shared ${PROJECT_SOURCE_DIR}/include)
 target_link_libraries(${LIBRARY_NAME} PRIVATE ${LIBRARY_NAME_SHARED})
@@ -46,15 +44,10 @@ target_link_libraries(${LIBRARY_NAME} PRIVATE ${LIBRARY_NAME_SHARED})
 add_executable(${PARTICIPANT_EXEC_NAME} src/cmd/participant.cxx)
 target_link_libraries(${PARTICIPANT_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
 
-# add ot test executables
-add_executable(${OTTEST_EXEC_NAME} src/cmd/ot_test.cxx)
-target_link_libraries(${OTTEST_EXEC_NAME} PRIVATE ${LIBRARY_NAME})
-
 # properties
 set_target_properties(
   ${LIBRARY_NAME}
   ${PARTICIPANT_EXEC_NAME}
-  ${OTTEST_EXEC_NAME}
     PROPERTIES
       CXX_STANDARD 20
       CXX_STANDARD_REQUIRED YES
