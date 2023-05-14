@@ -28,9 +28,11 @@
 #include "../../include/drivers/crypto_driver.hpp"
 #include "../../include/drivers/network_driver.hpp"
 
-class OTDriver {
+class OTDriver
+{
 public:
-  OTDriver(std::shared_ptr<NetworkDriver> network_driver,
+  OTDriver(int other_party,
+           std::shared_ptr<NetworkDriver> network_driver,
            std::shared_ptr<CryptoDriver> crypto_driver,
            std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys);
 
@@ -38,6 +40,8 @@ public:
   std::string OT_recv(int choice_bit);
 
 private:
+  int other_party;
+
   std::shared_ptr<CryptoDriver> crypto_driver;
   std::shared_ptr<NetworkDriver> network_driver;
   std::shared_ptr<CLIDriver> cli_driver;

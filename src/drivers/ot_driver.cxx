@@ -20,15 +20,18 @@
 #include "crypto++/osrng.h"
 #include "crypto++/rsa.h"
 
-auto& mod_exp = CryptoPP::ModularExponentiation;
+auto &mod_exp = CryptoPP::ModularExponentiation;
 
 /*
  * Constructor
  */
 OTDriver::OTDriver(
+    int other_party,
     std::shared_ptr<NetworkDriver> network_driver,
     std::shared_ptr<CryptoDriver> crypto_driver,
-    std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys) {
+    std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys)
+{
+  this->other_party = other_party;
   this->network_driver = network_driver;
   this->crypto_driver = crypto_driver;
   this->AES_key = keys.first;
@@ -46,9 +49,10 @@ OTDriver::OTDriver(
  * You may find `byteblock_to_integer` and `integer_to_byteblock` useful
  * Disconnect and throw errors only for invalid MACs
  */
-void OTDriver::OT_send(std::vector<std::string> m) {
+void OTDriver::OT_send(std::vector<std::string> m)
+{
   // Implement me!
-  auto& mod_inv = CryptoPP::EuclideanMultiplicativeInverse;
+  auto &mod_inv = CryptoPP::EuclideanMultiplicativeInverse;
   auto [dh_obj, dh_priv_key, dh_pub_key] = crypto_driver->DH_initialize();
 
   // 1) Sample a public DH value and send it to the receiver
@@ -56,14 +60,15 @@ void OTDriver::OT_send(std::vector<std::string> m) {
   sender_pub_key_msg.public_value = dh_pub_key;
   std::vector<unsigned char> bytes =
       crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &sender_pub_key_msg);
-  network_driver->send(bytes);
+  network_driver->send(other_party, bytes);
 
   // 2) Receive the receiver's public value
-  bytes = network_driver->read();
+  bytes = network_driver->read(other_party);
   auto [plain_bytes, verified] =
       crypto_driver->decrypt_and_verify(AES_key, HMAC_key, bytes);
-  if (!verified) {
-    network_driver->disconnect();
+  if (!verified)
+  {
+    network_driver->disconnect(other_party);
     throw std::runtime_error(
         "OT_send: Received invalid HMAC for receiver's public value");
   }
@@ -76,7 +81,8 @@ void OTDriver::OT_send(std::vector<std::string> m) {
   CryptoPP::Integer a = byteblock_to_integer(dh_priv_key);
 
   SenderToReceiver_OTEncryptedValues_Message ot_msg;
-  for (int i = 0; i < m.size(); i++) {
+  for (int i = 0; i < m.size(); i++)
+  {
     // HKDF input: (B / A^i)^a
     CryptoPP::Integer k_i = (B * mod_inv(mod_exp(A, i, DL_P), DL_P)) % DL_P;
 
@@ -91,7 +97,7 @@ void OTDriver::OT_send(std::vector<std::string> m) {
 
   // 4) Send the encrypted values
   bytes = crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &ot_msg);
-  network_driver->send(bytes);
+  network_driver->send(other_party, bytes);
 }
 
 /*
@@ -102,14 +108,16 @@ void OTDriver::OT_send(std::vector<std::string> m) {
  * You may find `byteblock_to_integer` and `integer_to_byteblock` useful
  * Disconnect and throw errors only for invalid MACs
  */
-std::string OTDriver::OT_recv(int choice_bit) {
+std::string OTDriver::OT_recv(int choice_bit)
+{
   // Implement me!
   // 1) Read the sender's public value
-  std::vector<unsigned char> bytes = network_driver->read();
+  std::vector<unsigned char> bytes = network_driver->read(other_party);
   auto [plain_bytes, verified] =
       crypto_driver->decrypt_and_verify(AES_key, HMAC_key, bytes);
-  if (!verified) {
-    network_driver->disconnect();
+  if (!verified)
+  {
+    network_driver->disconnect(other_party);
     throw std::runtime_error(
         "OT_recv: Received invalid HMAC for sender's public value");
   }
@@ -127,14 +135,15 @@ std::string OTDriver::OT_recv(int choice_bit) {
   receiver_pub_key_msg.public_value = dh_pub_key;
   bytes =
       crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &receiver_pub_key_msg);
-  network_driver->send(bytes);
+  network_driver->send(other_party, bytes);
 
   // 3) Generate the appropriate key and decrypt the appropriate ciphertext
-  bytes = network_driver->read();
+  bytes = network_driver->read(other_party);
   auto [plain_bytes_2, verified_2] =
       crypto_driver->decrypt_and_verify(AES_key, HMAC_key, bytes);
-  if (!verified) {
-    network_driver->disconnect();
+  if (!verified)
+  {
+    network_driver->disconnect(other_party);
     throw std::runtime_error(
         "OT_recv: Received invalid HMAC for sender's final message");
   }
