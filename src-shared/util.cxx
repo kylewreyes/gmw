@@ -134,8 +134,10 @@ std::vector<std::string> string_split(std::string str, char delimiter)
  */
 int generate_bit()
 {
-  CryptoPP::AutoSeededRandomPool rng;
-  return rng.GenerateBit();
+  // TODO: Fix
+  // CryptoPP::AutoSeededRandomPool rng;
+  // return rng.GenerateBit();
+  return 1;
 }
 
 /**
