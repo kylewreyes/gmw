@@ -9,12 +9,22 @@ PeerDriver::PeerDriver(int my_party, std::vector<std::string> addrs)
     this->my_party = my_party;
     this->addrs = addrs;
 
-    // TODO: Need to populate the network drivers
     this->crypto_driver = std::make_shared<CryptoDriver>();
 
+    // Establish a connection to every other party (except ourselves)
+    for (int i = 0; i < addrs.size(); i++) {
+        if (i == my_party) {
+            continue;
+        }
+
+        this->network_drivers[i] = NetworkDriverImpl();
+        // HandleKeyExchange with party i
+    }
+
+
     // std::shared_ptr<NetworkDriver> network_driver =
-    //     std::make_shared<NetworkDriverImpl>();
-    // network_driver->listen(port);
+    // std::make_shared<NetworkDriverImpl>();
+    // network_driver->listen(addrs[my_party]);
     // std::shared_ptr<CryptoDriver> crypto_driver =
     //     std::make_shared<CryptoDriver>();
 }
