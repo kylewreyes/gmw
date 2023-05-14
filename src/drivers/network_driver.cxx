@@ -58,7 +58,7 @@ void NetworkDriverImpl::connect(int other_party, std::string address,
 void NetworkDriverImpl::disconnect(int other_party) {
   sockets[other_party]->shutdown(boost::asio::ip::tcp::socket::shutdown_both);
   sockets[other_party]->close();
-  // TODO: Delete sockets
+  sockets.erase(other_party);
 }
 
 /**
