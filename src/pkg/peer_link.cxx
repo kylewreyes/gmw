@@ -46,7 +46,7 @@ void PeerLink::HandleKeyExchange()
   this->AES_key = keys.first;
   this->HMAC_key = keys.second;
 
-  std::cout << "party " << this->my_party << "got AES_key to be " << byteblock_to_string(this->AES_key) << " and hmac to be " << byteblock_to_string(this->HMAC_key) << std::endl;
+  std::cout << "party " << this->my_party << "talking to " << this->other_party << "got AES_key to be " << byteblock_to_string(this->AES_key) << " and hmac to be " << byteblock_to_string(this->HMAC_key) << std::endl;
 }
 
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
