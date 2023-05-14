@@ -101,7 +101,7 @@ public:
      * f.get() // 1's response value.
      */
     template <typename T, typename K>
-    std::future<T> start_in_thread(int other, SendType send_type, K payload);
+    std::shared_future<K> start_in_thread(int other, SendType send_type, T payload);
 
 private:
     // The party-index of this party, from [0, num_parties)
@@ -121,5 +121,5 @@ private:
 
     // A helper function for startInThread
     template <typename T, typename K>
-    std::future<T> do_start_in_thread(int other, SendType send_type, K payload);
+    std::shared_future<T> do_start_in_thread(int other, SendType send_type, K payload);
 };

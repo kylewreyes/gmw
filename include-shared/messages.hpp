@@ -20,18 +20,23 @@
 // MESSAGE TYPES
 // ================================================
 
-namespace MessageType {
-enum T {
-  HMACTagged_Wrapper = 1,
-  DHPublicValue_Message = 2,
-  SenderToReceiver_OTPublicValue_Message = 3,
-  ReceiverToSender_OTPublicValue_Message = 4,
-  SenderToReceiver_OTEncryptedValues_Message = 5,
-  GarblerToEvaluator_GarbledTables_Message = 6,
-  GarblerToEvaluator_GarblerInputs_Message = 7,
-  EvaluatorToGarbler_FinalLabels_Message = 8,
-  GarblerToEvaluator_FinalOutput_Message = 9,
-};
+namespace MessageType
+{
+  enum T
+  {
+    HMACTagged_Wrapper = 1,
+    DHPublicValue_Message = 2,
+    SenderToReceiver_OTPublicValue_Message = 3,
+    ReceiverToSender_OTPublicValue_Message = 4,
+    SenderToReceiver_OTEncryptedValues_Message = 5,
+    GarblerToEvaluator_GarbledTables_Message = 6,
+    GarblerToEvaluator_GarblerInputs_Message = 7,
+    EvaluatorToGarbler_FinalLabels_Message = 8,
+    GarblerToEvaluator_FinalOutput_Message = 9,
+
+    InitialShare_Message = 10,
+    Nop_Message = 11,
+  };
 };
 MessageType::T get_message_type(std::vector<unsigned char> &data);
 
@@ -39,7 +44,8 @@ MessageType::T get_message_type(std::vector<unsigned char> &data);
 // SERIALIZABLE
 // ================================================
 
-struct Serializable {
+struct Serializable
+{
   virtual void serialize(std::vector<unsigned char> &data) = 0;
   virtual int deserialize(std::vector<unsigned char> &data) = 0;
 };
@@ -59,7 +65,8 @@ int get_integer(CryptoPP::Integer *i, std::vector<unsigned char> &data,
 // WRAPPERS
 // ================================================
 
-struct HMACTagged_Wrapper : public Serializable {
+struct HMACTagged_Wrapper : public Serializable
+{
   std::vector<unsigned char> payload;
   CryptoPP::SecByteBlock iv;
   std::string mac;
@@ -72,7 +79,8 @@ struct HMACTagged_Wrapper : public Serializable {
 // KEY EXCHANGE
 // ================================================
 
-struct DHPublicValue_Message : public Serializable {
+struct DHPublicValue_Message : public Serializable
+{
   CryptoPP::SecByteBlock public_value;
 
   void serialize(std::vector<unsigned char> &data);
@@ -83,21 +91,24 @@ struct DHPublicValue_Message : public Serializable {
 // OBLIVIOUS TRANSFER
 // ================================================
 
-struct SenderToReceiver_OTPublicValue_Message : public Serializable {
+struct SenderToReceiver_OTPublicValue_Message : public Serializable
+{
   CryptoPP::SecByteBlock public_value;
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
 };
 
-struct ReceiverToSender_OTPublicValue_Message : public Serializable {
+struct ReceiverToSender_OTPublicValue_Message : public Serializable
+{
   CryptoPP::SecByteBlock public_value;
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
 };
 
-struct SenderToReceiver_OTEncryptedValues_Message : public Serializable {
+struct SenderToReceiver_OTEncryptedValues_Message : public Serializable
+{
   std::vector<std::string> encryptions;
   // we need to send IVs outputted by AES_encrypt
   std::vector<CryptoPP::SecByteBlock> ivs;
@@ -107,33 +118,20 @@ struct SenderToReceiver_OTEncryptedValues_Message : public Serializable {
 };
 
 // ================================================
-// GARBLED CIRCUITS
+// GMW
 // ================================================
 
-struct GarblerToEvaluator_GarbledTables_Message : public Serializable {
-  std::vector<GarbledGate> garbled_tables;
+struct InitialShare_Message : public Serializable
+{
+  int wire_number;
+  int share_value;
 
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
 };
 
-struct GarblerToEvaluator_GarblerInputs_Message : public Serializable {
-  std::vector<GarbledWire> garbler_inputs;
-
-  void serialize(std::vector<unsigned char> &data);
-  int deserialize(std::vector<unsigned char> &data);
-};
-
-struct EvaluatorToGarbler_FinalLabels_Message : public Serializable {
-  std::vector<GarbledWire> final_labels;
-
-  void serialize(std::vector<unsigned char> &data);
-  int deserialize(std::vector<unsigned char> &data);
-};
-
-struct GarblerToEvaluator_FinalOutput_Message : public Serializable {
-  std::string final_output;
-
+struct Nop_Message : public Serializable
+{
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
 };

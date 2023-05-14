@@ -25,7 +25,7 @@ struct Gate {
 };
 
 struct Circuit {
-  int num_gate, num_wire, garbler_input_length, evaluator_input_length,
+  int num_gate, num_wire, input_length,
       output_length;
   std::vector<Gate> gates;
 };

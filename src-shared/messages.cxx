@@ -9,7 +9,8 @@
 /**
  * Get message type.
  */
-MessageType::T get_message_type(std::vector<unsigned char> &data) {
+MessageType::T get_message_type(std::vector<unsigned char> &data)
+{
   return (MessageType::T)data[0];
 }
 
@@ -20,7 +21,8 @@ MessageType::T get_message_type(std::vector<unsigned char> &data) {
 /**
  * Puts the bool b into the end of data.
  */
-int put_bool(bool b, std::vector<unsigned char> &data) {
+int put_bool(bool b, std::vector<unsigned char> &data)
+{
   data.push_back((char)b);
   return 1;
 }
@@ -28,7 +30,8 @@ int put_bool(bool b, std::vector<unsigned char> &data) {
 /**
  * Puts the string s into the end of data.
  */
-int put_string(std::string s, std::vector<unsigned char> &data) {
+int put_string(std::string s, std::vector<unsigned char> &data)
+{
   // Put length
   int idx = data.size();
   data.resize(idx + sizeof(size_t));
@@ -43,14 +46,16 @@ int put_string(std::string s, std::vector<unsigned char> &data) {
 /**
  * Puts the integer i into the end of data.
  */
-int put_integer(CryptoPP::Integer i, std::vector<unsigned char> &data) {
+int put_integer(CryptoPP::Integer i, std::vector<unsigned char> &data)
+{
   return put_string(CryptoPP::IntToString(i), data);
 }
 
 /**
  * Puts the nest bool from data at index idx into b.
  */
-int get_bool(bool *b, std::vector<unsigned char> &data, int idx) {
+int get_bool(bool *b, std::vector<unsigned char> &data, int idx)
+{
   *b = (bool)data[idx];
   return 1;
 }
@@ -58,7 +63,8 @@ int get_bool(bool *b, std::vector<unsigned char> &data, int idx) {
 /**
  * Puts the nest string from data at index idx into s.
  */
-int get_string(std::string *s, std::vector<unsigned char> &data, int idx) {
+int get_string(std::string *s, std::vector<unsigned char> &data, int idx)
+{
   // Get length
   size_t str_size;
   std::memcpy(&str_size, &data[idx], sizeof(size_t));
@@ -74,7 +80,8 @@ int get_string(std::string *s, std::vector<unsigned char> &data, int idx) {
  * Puts the next integer from data at index idx into i.
  */
 int get_integer(CryptoPP::Integer *i, std::vector<unsigned char> &data,
-                int idx) {
+                int idx)
+{
   std::string i_str;
   int n = get_string(&i_str, data, idx);
   *i = CryptoPP::Integer(i_str.c_str());
@@ -85,10 +92,44 @@ int get_integer(CryptoPP::Integer *i, std::vector<unsigned char> &data,
 // WRAPPERS
 // ================================================
 
+void InitialShare_Message::serialize(std::vector<unsigned char> &data)
+{
+  data.push_back((char)MessageType::InitialShare_Message);
+
+  put_string(std::to_string(this->wire_number), data);
+  put_string(std::to_string(this->share_value), data);
+}
+
+int InitialShare_Message::deserialize(std::vector<unsigned char> &data)
+{
+  assert(data[0] == MessageType::InitialShare_Message);
+
+  std::string wire_number_string;
+  int n = 1;
+  n += get_string(&wire_number_string, data, n);
+  this->wire_number = std::stoi(wire_number_string);
+
+  std::string share_value_string;
+  n += get_string(&share_value_string, data, n);
+  this->share_value = std::stoi(share_value_string);
+
+  return n;
+}
+
+void Nop_Message::serialize(std::vector<unsigned char> &data) {
+  data.push_back((char)MessageType::InitialShare_Message);
+}
+
+int Nop_Message::deserialize(std::vector<unsigned char> &data) {
+  assert(data[0] == MessageType::Nop_Message);
+  return 1;
+}
+
 /**
  * serialize HMACTagged_Wrapper.
  */
-void HMACTagged_Wrapper::serialize(std::vector<unsigned char> &data) {
+void HMACTagged_Wrapper::serialize(std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::HMACTagged_Wrapper);
 
@@ -104,7 +145,8 @@ void HMACTagged_Wrapper::serialize(std::vector<unsigned char> &data) {
 /**
  * deserialize HMACTagged_Wrapper.
  */
-int HMACTagged_Wrapper::deserialize(std::vector<unsigned char> &data) {
+int HMACTagged_Wrapper::deserialize(std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::HMACTagged_Wrapper);
 
@@ -129,7 +171,8 @@ int HMACTagged_Wrapper::deserialize(std::vector<unsigned char> &data) {
 /**
  * serialize DHPublicValue_Message.
  */
-void DHPublicValue_Message::serialize(std::vector<unsigned char> &data) {
+void DHPublicValue_Message::serialize(std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::DHPublicValue_Message);
 
@@ -141,7 +184,8 @@ void DHPublicValue_Message::serialize(std::vector<unsigned char> &data) {
 /**
  * deserialize DHPublicValue_Message.
  */
-int DHPublicValue_Message::deserialize(std::vector<unsigned char> &data) {
+int DHPublicValue_Message::deserialize(std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::DHPublicValue_Message);
 
@@ -158,7 +202,8 @@ int DHPublicValue_Message::deserialize(std::vector<unsigned char> &data) {
 // ================================================
 
 void SenderToReceiver_OTPublicValue_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::SenderToReceiver_OTPublicValue_Message);
 
@@ -168,7 +213,8 @@ void SenderToReceiver_OTPublicValue_Message::serialize(
 }
 
 int SenderToReceiver_OTPublicValue_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::SenderToReceiver_OTPublicValue_Message);
 
@@ -181,7 +227,8 @@ int SenderToReceiver_OTPublicValue_Message::deserialize(
 }
 
 void ReceiverToSender_OTPublicValue_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::ReceiverToSender_OTPublicValue_Message);
 
@@ -191,7 +238,8 @@ void ReceiverToSender_OTPublicValue_Message::serialize(
 }
 
 int ReceiverToSender_OTPublicValue_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::ReceiverToSender_OTPublicValue_Message);
 
@@ -204,7 +252,8 @@ int ReceiverToSender_OTPublicValue_Message::deserialize(
 }
 
 void SenderToReceiver_OTEncryptedValues_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::SenderToReceiver_OTEncryptedValues_Message);
 
@@ -218,20 +267,23 @@ void SenderToReceiver_OTEncryptedValues_Message::serialize(
   std::memcpy(&data[idx], &num_encryptions, sizeof(size_t));
 
   // Put each encryption.
-  for (auto &s : encryptions) {
+  for (auto &s : encryptions)
+  {
     put_string(s, data);
   }
 
   // Put each IV. Note that the # of encryptions = # of IVs, so there's no need
   // to add the number for this
-  for (auto &iv_block : ivs) {
+  for (auto &iv_block : ivs)
+  {
     std::string iv_string = byteblock_to_string(iv_block);
     put_string(iv_string, data);
   }
 }
 
 int SenderToReceiver_OTEncryptedValues_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::SenderToReceiver_OTEncryptedValues_Message);
 
@@ -241,12 +293,14 @@ int SenderToReceiver_OTEncryptedValues_Message::deserialize(
 
   // Get fields. Note that n is the current index into data
   int n = 1 + sizeof(size_t);
-  for (int i = 0; i < num_encryptions; i++) {
+  for (int i = 0; i < num_encryptions; i++)
+  {
     std::string s;
     n += get_string(&s, data, n);
     encryptions.push_back(s);
   }
-  for (int i = 0; i < num_encryptions; i++) {
+  for (int i = 0; i < num_encryptions; i++)
+  {
     std::string iv;
     n += get_string(&iv, data, n);
     ivs.push_back(string_to_byteblock(iv));
@@ -259,7 +313,8 @@ int SenderToReceiver_OTEncryptedValues_Message::deserialize(
 // ================================================
 
 void GarblerToEvaluator_GarbledTables_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::GarblerToEvaluator_GarbledTables_Message);
 
@@ -270,11 +325,13 @@ void GarblerToEvaluator_GarbledTables_Message::serialize(
   std::memcpy(&data[idx], &num_tables, sizeof(size_t));
 
   // Put each table.
-  for (int i = 0; i < num_tables; i++) {
+  for (int i = 0; i < num_tables; i++)
+  {
     // Put num entries.
     CryptoPP::Integer num_entries = this->garbled_tables[i].entries.size();
     put_integer(num_entries, data);
-    for (int j = 0; j < num_entries; j++) {
+    for (int j = 0; j < num_entries; j++)
+    {
       std::string entry =
           byteblock_to_string(this->garbled_tables[i].entries[j]);
       put_string(entry, data);
@@ -283,7 +340,8 @@ void GarblerToEvaluator_GarbledTables_Message::serialize(
 }
 
 int GarblerToEvaluator_GarbledTables_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::GarblerToEvaluator_GarbledTables_Message);
 
@@ -293,11 +351,13 @@ int GarblerToEvaluator_GarbledTables_Message::deserialize(
 
   // Get fields.
   int n = 1 + sizeof(size_t);
-  for (int i = 0; i < num_tables; i++) {
+  for (int i = 0; i < num_tables; i++)
+  {
     GarbledGate gate;
     CryptoPP::Integer num_entries;
     n += get_integer(&num_entries, data, n);
-    for (int j = 0; j < num_entries; j++) {
+    for (int j = 0; j < num_entries; j++)
+    {
       std::string entry;
       n += get_string(&entry, data, n);
       gate.entries.push_back(string_to_byteblock(entry));
@@ -308,7 +368,8 @@ int GarblerToEvaluator_GarbledTables_Message::deserialize(
 }
 
 void GarblerToEvaluator_GarblerInputs_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::GarblerToEvaluator_GarblerInputs_Message);
 
@@ -319,14 +380,16 @@ void GarblerToEvaluator_GarblerInputs_Message::serialize(
   std::memcpy(&data[idx], &num_inputs, sizeof(size_t));
 
   // Put each table.
-  for (int i = 0; i < num_inputs; i++) {
+  for (int i = 0; i < num_inputs; i++)
+  {
     std::string entry = byteblock_to_string(this->garbler_inputs[i].value);
     put_string(entry, data);
   }
 }
 
 int GarblerToEvaluator_GarblerInputs_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::GarblerToEvaluator_GarblerInputs_Message);
 
@@ -337,7 +400,8 @@ int GarblerToEvaluator_GarblerInputs_Message::deserialize(
   // Get fields.
   int n = 1 + sizeof(size_t);
   this->garbler_inputs.resize(num_inputs);
-  for (int i = 0; i < num_inputs; i++) {
+  for (int i = 0; i < num_inputs; i++)
+  {
     std::string entry;
     n += get_string(&entry, data, n);
     this->garbler_inputs[i].value = string_to_byteblock(entry);
@@ -346,7 +410,8 @@ int GarblerToEvaluator_GarblerInputs_Message::deserialize(
 }
 
 void EvaluatorToGarbler_FinalLabels_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::EvaluatorToGarbler_FinalLabels_Message);
 
@@ -357,14 +422,16 @@ void EvaluatorToGarbler_FinalLabels_Message::serialize(
   std::memcpy(&data[idx], &num_labels, sizeof(size_t));
 
   // Put each table.
-  for (int i = 0; i < num_labels; i++) {
+  for (int i = 0; i < num_labels; i++)
+  {
     std::string entry = byteblock_to_string(this->final_labels[i].value);
     put_string(entry, data);
   }
 }
 
 int EvaluatorToGarbler_FinalLabels_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::EvaluatorToGarbler_FinalLabels_Message);
 
@@ -375,7 +442,8 @@ int EvaluatorToGarbler_FinalLabels_Message::deserialize(
   // Get fields.
   int n = 1 + sizeof(size_t);
   this->final_labels.resize(num_labels);
-  for (int i = 0; i < num_labels; i++) {
+  for (int i = 0; i < num_labels; i++)
+  {
     std::string entry;
     n += get_string(&entry, data, n);
     this->final_labels[i].value = string_to_byteblock(entry);
@@ -384,7 +452,8 @@ int EvaluatorToGarbler_FinalLabels_Message::deserialize(
 }
 
 void GarblerToEvaluator_FinalOutput_Message::serialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Add message type.
   data.push_back((char)MessageType::GarblerToEvaluator_FinalOutput_Message);
 
@@ -393,7 +462,8 @@ void GarblerToEvaluator_FinalOutput_Message::serialize(
 }
 
 int GarblerToEvaluator_FinalOutput_Message::deserialize(
-    std::vector<unsigned char> &data) {
+    std::vector<unsigned char> &data)
+{
   // Check correct message type.
   assert(data[0] == MessageType::GarblerToEvaluator_FinalOutput_Message);
 

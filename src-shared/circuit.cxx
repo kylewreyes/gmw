@@ -9,12 +9,19 @@
 Circuit parse_circuit(std::string filename) {
   Circuit circuit;
 
+  int garbler_input_length;
+  int evaluator_input_length;
+
   // Open file, scan header.
   FILE *f = fopen(filename.c_str(), "r");
   (void)fscanf(f, "%d%d\n", &circuit.num_gate, &circuit.num_wire);
-  (void)fscanf(f, "%d%d%d\n", &circuit.garbler_input_length,
-               &circuit.evaluator_input_length, &circuit.output_length);
+  (void)fscanf(f, "%d%d%d\n", &garbler_input_length,
+               &evaluator_input_length, &circuit.output_length);
   (void)fscanf(f, "\n");
+
+  // Compute the input_length from the garbler and evaluator length, so that we don't have to
+  // change the existing input files.
+  circuit.input_length = garbler_input_length + evaluator_input_length;
 
   // Scan gates.
   circuit.gates.resize(circuit.num_gate);

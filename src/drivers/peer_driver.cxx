@@ -20,14 +20,14 @@ PeerDriver::PeerDriver(int my_party, std::vector<std::string> addrs)
 }
 
 template <typename T, typename K>
-std::future<T> PeerDriver::start_in_thread(int other, SendType send_type, K payload)
+std::shared_future<T> PeerDriver::start_in_thread(int other, SendType send_type, K payload)
 {
     return std::async(std::launch::async, PeerDriver::do_start_in_thread, other, send_type, payload);
 }
 
-// TODO(neil): this is a work in progress!
+// TODO(neil): both T and K need to implement serializable
 template <typename T, typename K>
-std::future<T> PeerDriver::do_start_in_thread(int other, SendType send_type, K payload)
+std::shared_future<T> PeerDriver::do_start_in_thread(int other, SendType send_type, K payload)
 {
     int should_send_first = this->my_party < other;
     // Just use the default network connection.
@@ -53,7 +53,7 @@ std::future<T> PeerDriver::do_start_in_thread(int other, SendType send_type, K p
 
         if (should_send_first)
         {
-            network_driver.send(0);
+            network_driver.send(payload);
         }
         else
         {
