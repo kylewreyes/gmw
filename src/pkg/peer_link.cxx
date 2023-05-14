@@ -77,7 +77,8 @@ PeerLink::ReadFirstHandleKeyExchange()
       this->crypto_driver->AES_generate_key(DH_shared_key);
   CryptoPP::SecByteBlock HMAC_key =
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
-  auto keys = std::make_pair(AES_key, HMAC_key);
+  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys = std::make_pair(AES_key, HMAC_key);
+  // TODO: Fix linker error
   this->ot_driver =
       std::make_shared<OTDriver>(other_party, network_driver, crypto_driver, keys);
   return keys;
@@ -114,7 +115,7 @@ PeerLink::SendFirstHandleKeyExchange()
   CryptoPP::SecByteBlock HMAC_key =
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
   auto keys = std::make_pair(AES_key, HMAC_key);
-  this->ot_driver =
-      std::make_shared<OTDriver>(other_party, network_driver, crypto_driver, keys);
+  // this->ot_driver =
+  //     std::make_shared<OTDriver>(other_party, network_driver, crypto_driver, keys);
   return keys;
 }
