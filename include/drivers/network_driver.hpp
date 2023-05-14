@@ -6,18 +6,20 @@
 
 #include "../../include-shared/messages.hpp"
 
-class NetworkDriver {
- public:
+class NetworkDriver
+{
+public:
   virtual void listen(int port) = 0;
   virtual void connect(int other_party, std::string address, int port) = 0;
   virtual void disconnect(int other_party) = 0;
   virtual void send(int other_party, std::vector<unsigned char> data) = 0;
   virtual std::vector<unsigned char> read(int other_party) = 0;
-  virtual std::string get_remote_info() = 0;
+  virtual std::string get_remote_info(int other_party) = 0;
 };
 
-class NetworkDriverImpl : public NetworkDriver {
- public:
+class NetworkDriverImpl : public NetworkDriver
+{
+public:
   NetworkDriverImpl(std::unordered_map<std::string, int> addresses);
   ~NetworkDriverImpl();
   void listen(int port);
@@ -27,8 +29,8 @@ class NetworkDriverImpl : public NetworkDriver {
   std::vector<unsigned char> read(int other_party);
   std::string get_remote_info(int other_party);
 
- private:
- // TODO: Make sure we're consistent with how we format the strings
+private:
+  // TODO: Make sure we're consistent with how we format the strings
   std::unordered_map<std::string, int> addresses;
   // Sharing io_context's allow for performance benefit when doing async IO
   boost::asio::io_context io_context;
