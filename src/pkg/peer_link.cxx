@@ -16,16 +16,21 @@ namespace
 /**
  * Constructor. Note that the OT_driver is left uninitialized.
  */
-PeerClient::PeerClient(
+PeerLink::PeerLink(
     int my_party,
-    std::shared_ptr<CryptoDriver> crypto_driver)
+    int other_party, std::string address, int port,
+    std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver)
 {
   this->my_party = my_party;
+
+  this->other_party = other_party;
+  this->network_driver = network_driver;
   this->crypto_driver = crypto_driver;
+
+  this->network_driver->connect(other_party, address, port);
 }
 
-std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerClient::HandleKeyExchange(int other_party)
+void PeerLink::HandleKeyExchange()
 {
   bool send_first = this->my_party < other_party;
 
@@ -44,13 +49,13 @@ PeerClient::HandleKeyExchange(int other_party)
 }
 
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerClient::ReadFirstHandleKeyExchange()
+PeerLink::ReadFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
 
   // Listen for g^b
-  std::vector<unsigned char> garbler_public_value_data = network_driver->read();
+  std::vector<unsigned char> garbler_public_value_data = network_driver->read(other_party);
   DHPublicValue_Message garbler_public_value_s;
   garbler_public_value_s.deserialize(garbler_public_value_data);
 
@@ -59,7 +64,7 @@ PeerClient::ReadFirstHandleKeyExchange()
   evaluator_public_value_s.public_value = std::get<2>(dh_values);
   std::vector<unsigned char> evaluator_public_value_data;
   evaluator_public_value_s.serialize(evaluator_public_value_data);
-  network_driver->send(evaluator_public_value_data);
+  network_driver->send(other_party, evaluator_public_value_data);
 
   // Recover g^ab
   CryptoPP::SecByteBlock DH_shared_key = crypto_driver->DH_generate_shared_key(
@@ -79,7 +84,7 @@ PeerClient::ReadFirstHandleKeyExchange()
  * Handle key exchange with evaluator
  */
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerClient::SendFirstHandleKeyExchange()
+PeerLink::SendFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
@@ -89,11 +94,11 @@ PeerClient::SendFirstHandleKeyExchange()
   garbler_public_value_s.public_value = std::get<2>(dh_values);
   std::vector<unsigned char> garbler_public_value_data;
   garbler_public_value_s.serialize(garbler_public_value_data);
-  network_driver->send(garbler_public_value_data);
+  network_driver->send(other_party, garbler_public_value_data);
 
   // Listen for g^a
   std::vector<unsigned char> evaluator_public_value_data =
-      network_driver->read();
+      network_driver->read(other_party);
   DHPublicValue_Message evaluator_public_value_s;
   evaluator_public_value_s.deserialize(evaluator_public_value_data);
 
