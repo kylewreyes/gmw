@@ -1,5 +1,7 @@
 #include "../include-shared/util.hpp"
 
+using namespace CryptoPP;
+
 /**
  * Convert char vec to string.
  */
