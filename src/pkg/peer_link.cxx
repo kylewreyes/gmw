@@ -1,3 +1,5 @@
+#include "../../include/pkg/peer_link.hpp"
+
 #include "../../include-shared/constants.hpp"
 #include "../../include-shared/util.hpp"
 #include "../../include-shared/logger.hpp"
