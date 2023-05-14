@@ -128,6 +128,15 @@ std::vector<std::string> string_split(std::string str, char delimiter)
 }
 
 /**
+ * Generates a random bit.
+ */
+int generate_bit()
+{
+  CryptoPP::AutoSeededRandomPool rng;
+  return rng.GenerateBit();
+}
+
+/**
  * Parse input to a GMW circuit. Each line corresponds to a wire input, and each line will have
  * a party index, followed by a colon, followed by their input. Consider:
  *
@@ -167,7 +176,8 @@ std::vector<InitialWireInput> parse_input(std::string input_file)
   return res;
 }
 
-std::vector<std::string> parse_addrs(std::string addr_file) {
+std::vector<std::string> parse_addrs(std::string addr_file)
+{
   std::string input_str;
   CryptoPP::FileSource(addr_file.c_str(), true,
                        new CryptoPP::StringSink(input_str));

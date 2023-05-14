@@ -13,6 +13,7 @@
 #include <crypto++/integer.h>
 #include <crypto++/misc.h>
 #include <crypto++/sha.h>
+#include <crypto++/rng.h>
 
 // String <=> Vec<char>.
 std::string chvec2str(std::vector<unsigned char> data);
@@ -35,6 +36,9 @@ void print_string_as_hex(std::string str);
 void print_key_as_int(const CryptoPP::SecByteBlock &block);
 void print_key_as_hex(const CryptoPP::SecByteBlock &block);
 
+// Randomness.
+int generate_bit();
+
 // Splitter.
 std::vector<std::string> string_split(std::string str, char delimiter);
 
@@ -50,4 +54,3 @@ std::vector<InitialWireInput> parse_input(std::string input_file);
 
 // Address parser
 std::vector<std::string> parse_addrs(std::string addr_file);
-

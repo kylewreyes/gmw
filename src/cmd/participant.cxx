@@ -117,21 +117,64 @@ int main(int argc, char *argv[])
   // ======================
   for (Gate g : circuit.gates)
   {
+    int left = shares[g.lhs];
+    int right = shares[g.rhs];
+
     if (g.type == GateType::XOR_GATE)
     {
-      shares[g.output] = (shares[g.lhs] ^ shares[g.rhs]);
+      shares[g.output] = (left ^ right);
     }
     else if (g.type == GateType::AND_GATE)
     {
-      // This is a bit more involved
+      int ot_accumulator = 0;
+
+      for (int i = 0; i < num_parties; i++)
+      {
+        if (my_party == i)
+        {
+          continue;
+        }
+
+        int is_OT_sender = my_party < i;
+
+        int ot_response;
+        if (is_OT_sender)
+        {
+          int bit = generate_bit();
+          ot_response = bit;
+
+          std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
+
+          // Need to async send these to other person
+        }
+        else
+        {
+          // 0, 0 -> 0
+          // 1, 0 -> 1
+          // 0, 1 -> 2
+          // 1, 1 -> 3
+          int choice_bit = left + (2 * right);
+
+          // TODO(neil): CHANGE ME!
+          ot_response = 1;
+        }
+
+        ot_accumulator += ot_response;
+      }
+
+      ot_accumulator += (left * right);
+      ot_accumulator = ot_accumulator % 2;
+
+      shares[g.output] = ot_accumulator;
     }
     else if (g.type == GateType::NOT_GATE)
     {
+      throw std::runtime_error("not yet implemented");
       // This should be an easy case, but it's not in the paper
     }
     else
     {
-      throw std::runtime_error("Invalid gate type found")
+      throw std::runtime_error("Invalid gate type found");
     }
   }
 
