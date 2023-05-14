@@ -15,6 +15,7 @@ public:
       std::shared_ptr<NetworkDriver> network_driver,
       std::shared_ptr<CryptoDriver> crypto_driver);
 
+  void Connect();
   void HandleKeyExchange();
 
   // Sharing
@@ -26,7 +27,10 @@ public:
 
 private:
   int my_party;
+
   int other_party;
+  std::string address;
+  int port;
 
   std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> SendFirstHandleKeyExchange();
   std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> ReadFirstHandleKeyExchange();

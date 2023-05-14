@@ -16,6 +16,9 @@ include(Documentation)
 include(Warnings)
 include(Curses)
 
+# Debugging
+set(CMAKE_BUILD_TYPE Debug)
+
 # add shared libraries
 set(SOURCES_SHARED
   src-shared/circuit.cxx

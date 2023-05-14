@@ -25,9 +25,15 @@ PeerLink::PeerLink(
   this->my_party = my_party;
 
   this->other_party = other_party;
+  this->address = address;
+  this->port = port;
+
   this->network_driver = network_driver;
   this->crypto_driver = crypto_driver;
+}
 
+void PeerLink::Connect()
+{
   this->network_driver->connect(other_party, address, port);
 }
 

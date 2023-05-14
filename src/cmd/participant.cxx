@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
   std::vector<InitialWireInput> input = parse_input(input_file);
   std::vector<std::string> addrs = parse_addrs(addr_file);
   int num_parties = addrs.size();
+  int my_port = std::stoi(string_split(addrs[my_party], ':')[1]);
 
   // ==========================
   // CONNECT TO PEERS
@@ -49,6 +50,7 @@ int main(int argc, char *argv[])
   }
 
   std::shared_ptr<NetworkDriver> network_driver = std::make_shared<NetworkDriverImpl>(addr_mapping);
+  network_driver->listen(my_port);
   std::shared_ptr<CryptoDriver> crypto_driver = std::make_shared<CryptoDriver>();
 
   PeerLink pl(0, 0, "", 0, network_driver, crypto_driver);
@@ -62,6 +64,7 @@ int main(int argc, char *argv[])
     }
 
     peer_links[i] = PeerLink(my_party, i, addrs[i], 0, network_driver, crypto_driver);
+    peer_links[i].Connect();
   }
 
   // ===========================
