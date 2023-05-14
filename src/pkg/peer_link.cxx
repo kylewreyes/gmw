@@ -79,7 +79,7 @@ PeerLink::ReadFirstHandleKeyExchange()
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
   auto keys = std::make_pair(AES_key, HMAC_key);
   this->ot_driver =
-      std::make_shared<OTDriver>(network_driver, crypto_driver, keys);
+      std::make_shared<OTDriver>(other_party, network_driver, crypto_driver, keys);
   return keys;
 }
 
@@ -115,6 +115,6 @@ PeerLink::SendFirstHandleKeyExchange()
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
   auto keys = std::make_pair(AES_key, HMAC_key);
   this->ot_driver =
-      std::make_shared<OTDriver>(network_driver, crypto_driver, keys);
+      std::make_shared<OTDriver>(other_party, network_driver, crypto_driver, keys);
   return keys;
 }
