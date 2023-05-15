@@ -24,14 +24,14 @@ PeerLink::PeerLink(std::shared_ptr<NetworkDriver> network_driver, std::shared_pt
 }
 
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerLink::ReadFirstHandleKeyExchange(std::shared_ptr<boost::asio::ip::tcp::socket> sock)
+PeerLink::ReadFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
 
   // Listen for g^b
   std::cout << "performing read-first handle key exchange\n";
-  std::vector<unsigned char> garbler_public_value_data = network_driver->socket_read(sock);
+  std::vector<unsigned char> garbler_public_value_data = network_driver->socket_read(socket);
   std::cout << "done with socket read" << std::endl;
   DHPublicValue_Message garbler_public_value_s;
   garbler_public_value_s.deserialize(garbler_public_value_data);
@@ -41,7 +41,7 @@ PeerLink::ReadFirstHandleKeyExchange(std::shared_ptr<boost::asio::ip::tcp::socke
   evaluator_public_value_s.public_value = std::get<2>(dh_values);
   std::vector<unsigned char> evaluator_public_value_data;
   evaluator_public_value_s.serialize(evaluator_public_value_data);
-  network_driver->socket_send(sock, evaluator_public_value_data);
+  network_driver->socket_send(socket, evaluator_public_value_data);
 
   // Recover g^ab
   CryptoPP::SecByteBlock DH_shared_key = crypto_driver->DH_generate_shared_key(
@@ -59,7 +59,7 @@ PeerLink::ReadFirstHandleKeyExchange(std::shared_ptr<boost::asio::ip::tcp::socke
  * Handle key exchange with evaluator
  */
 std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerLink::SendFirstHandleKeyExchange(int other_party)
+PeerLink::SendFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
@@ -69,13 +69,12 @@ PeerLink::SendFirstHandleKeyExchange(int other_party)
   garbler_public_value_s.public_value = std::get<2>(dh_values);
   std::vector<unsigned char> garbler_public_value_data;
   garbler_public_value_s.serialize(garbler_public_value_data);
-  std::cout << "going to send to the other party " << other_party << "\n";
-  network_driver->send(other_party, garbler_public_value_data);
+  network_driver->socket_send(socket, garbler_public_value_data);
   std::cout << "sent!" << std::endl;
 
   // Listen for g^a
   std::vector<unsigned char> evaluator_public_value_data =
-      network_driver->read(other_party);
+      network_driver->socket_read(socket);
   DHPublicValue_Message evaluator_public_value_s;
   evaluator_public_value_s.deserialize(evaluator_public_value_data);
 

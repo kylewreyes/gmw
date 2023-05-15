@@ -77,29 +77,65 @@ int main(int argc, char *argv[])
   std::this_thread::sleep_for(std::chrono::seconds(5));
 
   // ===========================
-  // KEY EXCHANGE
+  // SETUP PEER LINKS
   // ===========================
 
-  // For all the send_conns, in a thread do a SendFirstHandleKeyExchange
-  // For all the recv_conns, in a thread to a ReceiveFirstHandleKeyExchange
+  std::vector<PeerLink> peer_links;
+  for (int i = 0; i < num_parties; i++)
+  {
+    if (i == my_party)
+    {
+      continue;
+    }
+
+    peer_links.push_back(PeerLink(network_driver, crypto_driver));
+  }
+
+  // Record in the peer links which ones are supposed to send first
+  int peer_link_idx = 0;
+  for (int i = my_party + 1; i < num_parties; i++)
+  {
+    auto &pl = peer_links[peer_link_idx++];
+    pl.is_send_first = true;
+  }
+
+  for (int i = 0; i < my_party; i++)
+  {
+    auto &pl = peer_links[peer_link_idx++];
+    pl.is_send_first = false;
+  }
+
+  if (peer_links.size() != network_driver->sockets.size())
+  {
+    throw std::runtime_error("peer links size must match sockets size, i.e. num_parties - 1");
+  }
+
+  // Assign a socket to every PeerLink
+  // After this point, we should only have to deal with PeerLinks
+  int socket_index = 0;
+  for (PeerLink &pl : peer_links)
+  {
+    pl.socket = network_driver->sockets[socket_index++];
+  }
+
+  // ==============================
+  // KEY EXCHANGE
+  // ==============================
 
   std::vector<std::thread> threads;
 
-  PeerLink pl(network_driver, crypto_driver);
-
-  for (int i = my_party + 1; i < num_parties; i++)
+  for (PeerLink &pl : peer_links)
   {
-    threads.push_back(std::thread([&pl, i]()
-                                  { 
-                                    auto keys = pl.SendFirstHandleKeyExchange(i);
-                                    std::cout << "got aes key to be for party " << i << " to be " << byteblock_to_string(keys.first) << std::endl; }));
-  }
-
-  for (auto s : network_driver->recv_conns)
-  {
-    threads.push_back(std::thread([&pl, s]()
-                                  { auto keys = pl.ReadFirstHandleKeyExchange(s);
-                                    std::cout << "got aes key to be " << byteblock_to_string(keys.first) << std::endl; }));
+    if (pl.is_send_first)
+    {
+      threads.push_back(std::thread([&pl]()
+                                    { pl.SendFirstHandleKeyExchange(); }));
+    }
+    else
+    {
+      threads.push_back(std::thread([&pl]()
+                                    { pl.ReadFirstHandleKeyExchange(); }));
+    }
   }
 
   for (auto &thr : threads)
@@ -119,6 +155,40 @@ int main(int argc, char *argv[])
   // ========================
   // Initial wire sharing
   // ========================
+  // for (int i = 0; i < input.size(); i++)
+  // {
+  //   InitialWireInput wire_initial_input = input[i];
+
+  //   int wire_owner = wire_initial_input.party_index;
+
+  //   if (wire_owner == my_party)
+  //   {
+  //     std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
+
+  //     for (int j = 0; j < num_parties; j++)
+  //     {
+  //       int curr_share = shares[j];
+
+  //       if (j == my_party)
+  //       {
+  //         shares[i] = curr_share;
+  //       }
+  //       else
+  //       {
+  //         // Over send_conns send some shares
+  //         // Over recv_conns send some shares
+
+  //         // Using which keys?
+  //         // Need to associate keys with a socket
+  //         peer_links[i].DispatchShare(curr_share);
+  //       }
+  //     }
+  //   }
+  //   else
+  //   {
+  //     shares[i] = peer_links[i].ReceiveShare();
+  //   }
+  // }
 
   // =====================
   // GMW Circuit evaluation

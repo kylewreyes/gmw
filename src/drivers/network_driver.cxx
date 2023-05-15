@@ -16,10 +16,6 @@ NetworkDriverImpl::~NetworkDriverImpl() { io_context.stop(); }
 /**
  * Listen on the given port at localhost.
  *
- * We ONLY receive connections from parties with lower indices than us. We put these socket
- * connections into recv_conns.
- *
- *
  * @param port Port to listen on.
  */
 void NetworkDriverImpl::listen(int num_connections, int port)
@@ -32,7 +28,7 @@ void NetworkDriverImpl::listen(int num_connections, int port)
     std::string remote_info = s->remote_endpoint().address().to_string() + ":" +
                               std::to_string(s->remote_endpoint().port());
     std::cout << "Party listening on port " << port << "got connection from " << remote_info << "\n";
-    this->recv_conns.insert(s);
+    sockets.push_back(s);
   }
 }
 
@@ -42,21 +38,10 @@ void NetworkDriverImpl::listen(int num_connections, int port)
  * @param address Address to connect to.
  * @param port Port to conect to.
  */
-void NetworkDriverImpl::connect(int other_party, std::string address,
-                                int port)
+void NetworkDriverImpl::connect(int other_party, std::string address, int port)
 {
-  std::shared_ptr<boost::asio::ip::tcp::socket> s;
-
-  auto it = send_conns.find(other_party);
-  if (it != send_conns.end())
-  {
-    s = it->second;
-  }
-  else
-  {
-    s = std::make_shared<tcp::socket>(io_context);
-    send_conns[other_party] = s;
-  }
+  auto s = std::make_shared<tcp::socket>(io_context);
+  sockets.push_back(s);
 
   while (true)
   {
@@ -84,17 +69,6 @@ void NetworkDriverImpl::disconnect(int other_party)
   throw std::runtime_error("not yet implemented!");
 }
 
-/**
- * Sends a fixed amount of data by sending length first.
- * @param data Bytes of data to send.
- */
-void NetworkDriverImpl::send(int other_party, std::vector<unsigned char> data)
-{
-  std::cout << "about to send to the other party " << other_party << "\n";
-  auto socket = send_conns[other_party];
-  this->socket_send(socket, data);
-}
-
 void NetworkDriverImpl::socket_send(std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::vector<unsigned char> data)
 {
   std::cout << "calling socket send \n";
@@ -102,12 +76,6 @@ void NetworkDriverImpl::socket_send(std::shared_ptr<boost::asio::ip::tcp::socket
   boost::asio::write(*sock,
                      boost::asio::buffer(&length, sizeof(int)));
   boost::asio::write(*sock, boost::asio::buffer(data));
-}
-
-std::vector<unsigned char> NetworkDriverImpl::read(int other_party)
-{
-  auto sock = send_conns[other_party];
-  return this->socket_read(sock);
 }
 
 /**
