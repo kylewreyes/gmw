@@ -3,6 +3,9 @@
 #include <iostream>
 #include <string>
 #include <unordered_map>
+#include <future>
+#include <thread> // std::this_thread::sleep_for
+#include <chrono> // std::chrono::seconds
 
 #include "../../include-shared/circuit.hpp"
 #include "../../include-shared/logger.hpp"
@@ -40,45 +43,71 @@ int main(int argc, char *argv[])
   int num_parties = addrs.size();
   int my_port = std::stoi(string_split(addrs[my_party], ':')[1]);
 
-  // ==========================
-  // CONNECT TO PEERS
-  // ==========================
+  // ===============================
+  // PREPARE TO CONNECT TO PEERS
+  // ===============================
   std::unordered_map<std::string, int> addr_mapping;
   for (int i = 0; i < addrs.size(); i++)
   {
     addr_mapping[addrs[i]] = i;
   }
 
-  std::shared_ptr<NetworkDriver> network_driver = std::make_shared<NetworkDriverImpl>(addr_mapping);
-  network_driver->listen(my_port);
+  std::shared_ptr<NetworkDriverImpl> network_driver = std::make_shared<NetworkDriverImpl>();
   std::shared_ptr<CryptoDriver> crypto_driver = std::make_shared<CryptoDriver>();
 
-  PeerLink pl(0, 0, "", 0, network_driver, crypto_driver);
-  std::vector<PeerLink> peer_links(num_parties, pl);
+  // We only need to clean this up at the end
+  std::thread listen_thread([network_driver, my_party, my_port]()
+                            {
+        std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections\n";
+        network_driver->listen(my_party, my_port); });
 
-  for (int i = 0; i < num_parties; i++)
+  // ==========================
+  // ESTABLISH CONNECTIONS
+  // ==========================
+  for (int i = my_party + 1; i < num_parties; i++)
   {
-    if (i == my_party)
-    {
-      continue;
-    }
+    auto addr_parts = parse_addr(addrs[i]);
 
-    peer_links[i] = PeerLink(my_party, i, addrs[i], 0, network_driver, crypto_driver);
-    peer_links[i].Connect();
+    // Need to make the connection to peer i
+    network_driver->connect(i, addr_parts.first, addr_parts.second);
+
+    std::cout << "Party " << my_party << " successfully connected to peer " << i << "\n";
   }
+
+  std::this_thread::sleep_for(std::chrono::seconds(5));
 
   // ===========================
   // KEY EXCHANGE
   // ===========================
-  for (int i = 0; i < num_parties; i++)
-  {
-    if (i == my_party)
-    {
-      continue;
-    }
 
-    peer_links[i].HandleKeyExchange();
+  // For all the send_conns, in a thread do a SendFirstHandleKeyExchange
+  // For all the recv_conns, in a thread to a ReceiveFirstHandleKeyExchange
+
+  std::vector<std::thread> threads;
+
+  for (int i = my_party + 1; i < num_parties; i++)
+  {
+    PeerLink pl(network_driver, crypto_driver);
+
+    threads.push_back(std::thread([&pl, i]()
+                                  { pl.SendFirstHandleKeyExchange(i); }));
   }
+
+  for (auto s : network_driver->recv_conns)
+  {
+    PeerLink pl(network_driver, crypto_driver);
+
+    threads.push_back(std::thread([&pl, s]()
+                                  { pl.ReadFirstHandleKeyExchange(s); }));
+  }
+
+  for (auto &thr : threads)
+  {
+    thr.join();
+  }
+
+  // For the things less than us: listen in a thread, and do key exchange in that thread
+  // For the things greater than us, send in a thread and do key exchange in that thread
 
   // ===========================
   // SECRET SHARES
@@ -93,6 +122,9 @@ int main(int argc, char *argv[])
   // =====================
   // GMW Circuit evaluation
   // ======================
+
+  // Clean up the listener thread
+  listen_thread.detach();
 
   return 0;
 }

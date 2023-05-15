@@ -129,6 +129,12 @@ std::vector<std::string> string_split(std::string str, char delimiter)
   return result;
 }
 
+std::pair<std::string, int> parse_addr(std::string str)
+{
+  auto parts = string_split(str, ':');
+  return std::pair<std::string, int>(parts[0], std::stoi(parts[1]));
+}
+
 /**
  * Generates a random bit.
  */

@@ -9,37 +9,13 @@
 class PeerLink
 {
 public:
-  PeerLink(
-      int my_party,
-      int other_party, std::string address, int port,
-      std::shared_ptr<NetworkDriver> network_driver,
-      std::shared_ptr<CryptoDriver> crypto_driver);
+  PeerLink(std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver);
 
-  void Connect();
-  void HandleKeyExchange();
+  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> SendFirstHandleKeyExchange(int other_party);
 
-  // Sharing
-  void DispatchShare(int share);
-  int ReceiveShare();
-
-  // OT (circuit evaluation)
-  int HandleAndGate();
+  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> ReadFirstHandleKeyExchange(std::shared_ptr<boost::asio::ip::tcp::socket> sock);
 
 private:
-  int my_party;
-
-  int other_party;
-  std::string address;
-  int port;
-
-  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> SendFirstHandleKeyExchange();
-  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> ReadFirstHandleKeyExchange();
-
   std::shared_ptr<NetworkDriver> network_driver;
   std::shared_ptr<CryptoDriver> crypto_driver;
-
-  CryptoPP::SecByteBlock AES_key;
-  CryptoPP::SecByteBlock HMAC_key;
-
-  std::shared_ptr<OTDriver> ot_driver;
 };

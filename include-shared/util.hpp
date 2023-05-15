@@ -42,6 +42,9 @@ int generate_bit();
 // Splitter.
 std::vector<std::string> string_split(std::string str, char delimiter);
 
+// Addresses
+std::pair<std::string, int> parse_addr(std::string str);
+
 // Input struct from a file
 struct InitialWireInput
 {
