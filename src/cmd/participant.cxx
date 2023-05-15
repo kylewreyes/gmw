@@ -46,6 +46,7 @@ int main(int argc, char *argv[])
   // ===============================
   // PREPARE TO CONNECT TO PEERS
   // ===============================
+  // TODO: DO WE STILL NEED THIS?
   std::unordered_map<std::string, int> addr_mapping;
   for (int i = 0; i < addrs.size(); i++)
   {
@@ -56,9 +57,10 @@ int main(int argc, char *argv[])
   std::shared_ptr<CryptoDriver> crypto_driver = std::make_shared<CryptoDriver>();
 
   // We only need to clean this up at the end
+  // TODO: Might need a mutex for sockets coz more than 1 thread is accessing it at the same time
   std::thread listen_thread([network_driver, my_party, my_port]()
                             {
-        std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections\n";
+        std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections" << std::endl;
         network_driver->listen(my_party, my_port); });
 
   // ==========================
@@ -71,9 +73,10 @@ int main(int argc, char *argv[])
     // Need to make the connection to peer i
     network_driver->connect(i, addr_parts.first, addr_parts.second);
 
-    std::cout << "Party " << my_party << " successfully connected to peer " << i << "\n";
+    std::cout << "Party " << my_party << " successfully connected to peer " << i << std::endl;
   }
 
+  // TODO: Replace this with a join and also maybe move this further down?
   std::this_thread::sleep_for(std::chrono::seconds(5));
 
   // ===========================
@@ -115,6 +118,7 @@ int main(int argc, char *argv[])
   int socket_index = 0;
   for (PeerLink &pl : peer_links)
   {
+    // TODO: How do you know that the appropriate peer links match up with the appropriate sockets??
     pl.socket = network_driver->sockets[socket_index++];
   }
 
@@ -122,6 +126,10 @@ int main(int argc, char *argv[])
   // KEY EXCHANGE
   // ==============================
 
+  // TODO: 
+  // Option 1: Have (n - 1) threads. Each thread has some kind of receive and 
+  // send queue to allow communication between the main and PeerLink thread.
+  // Option 2: Don't spawn threads. Do key exchange and reshare in sequential predefined order.
   std::vector<std::thread> threads;
 
   for (PeerLink &pl : peer_links)

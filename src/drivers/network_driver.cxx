@@ -27,7 +27,7 @@ void NetworkDriverImpl::listen(int num_connections, int port)
     acceptor.accept(*s);
     std::string remote_info = s->remote_endpoint().address().to_string() + ":" +
                               std::to_string(s->remote_endpoint().port());
-    std::cout << "Party listening on port " << port << "got connection from " << remote_info << "\n";
+    std::cout << "Party listening on port " << port << "got connection from " << remote_info << std::endl;
     sockets.push_back(s);
   }
 }
@@ -52,7 +52,7 @@ void NetworkDriverImpl::connect(int other_party, std::string address, int port)
     }
     catch (boost::wrapexcept<boost::system::system_error> &e)
     {
-      std::cout << "Couldn't connect to party " << other_party << ". Backing off 5 seconds.\n";
+      std::cout << "Couldn't connect to party " << other_party << ". Retrying in 3 seconds." << std::endl;
       std::this_thread::sleep_for(std::chrono::seconds(3));
     }
   }
@@ -71,7 +71,7 @@ void NetworkDriverImpl::disconnect(int other_party)
 
 void NetworkDriverImpl::socket_send(std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::vector<unsigned char> data)
 {
-  std::cout << "calling socket send \n";
+  std::cout << "calling socket send" << std::endl;
   int length = htonl(data.size());
   boost::asio::write(*sock,
                      boost::asio::buffer(&length, sizeof(int)));
@@ -88,7 +88,7 @@ std::vector<unsigned char> NetworkDriverImpl::socket_read(std::shared_ptr<boost:
   // read length
   int length;
   boost::system::error_code error;
-  std::cout << "going to read from the socket the first amount\n";
+  std::cout << "going to read from the socket the first amount" << std::endl;
   boost::asio::read(*sock,
                     boost::asio::buffer(&length, sizeof(int)),
                     boost::asio::transfer_exactly(sizeof(int)), error);
@@ -99,7 +99,7 @@ std::vector<unsigned char> NetworkDriverImpl::socket_read(std::shared_ptr<boost:
   length = ntohl(length);
 
   // read message
-  std::cout << "going to read from the socket the message\n";
+  std::cout << "going to read from the socket the message" << std::endl;
   std::vector<unsigned char> data;
   data.resize(length);
   boost::asio::read(*sock, boost::asio::buffer(data),
