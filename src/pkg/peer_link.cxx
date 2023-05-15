@@ -26,6 +26,30 @@ PeerLink::PeerLink(std::shared_ptr<boost::asio::ip::tcp::socket> socket, std::sh
   this->crypto_driver = crypto_driver;
 }
 
+void PeerLink::GossipSend(std::string bit_string)
+{
+  FinalGossip_Message msg;
+  msg.bit_string = bit_string;
+
+  auto bytes = this->crypto_driver->encrypt_and_tag(AES_key, HMAC_key, &msg);
+  this->network_driver->socket_send(socket, bytes);
+}
+
+std::string PeerLink::GossipReceive()
+{
+  FinalGossip_Message msg;
+
+  auto bytes = this->network_driver->socket_read(socket);
+  auto [data, verified] = this->crypto_driver->decrypt_and_verify(AES_key, HMAC_key, bytes);
+  if (!verified)
+  {
+    throw std::runtime_error("error verifying final gossip message");
+  }
+
+  msg.deserialize(data);
+  return msg.bit_string;
+}
+
 /*
  * Send one of m[0], ..., m[n - 1] using OT, where n = m.size(). This function
  * should:

@@ -168,8 +168,6 @@ int main(int argc, char *argv[])
     }
     else if (g.type == GateType::AND_GATE)
     {
-      std::cout << "Executing AND gate" << std::endl;
-
       int ot_accumulator = 0;
 
       for (int i = 0; i < num_parties; i++)
@@ -187,7 +185,6 @@ int main(int argc, char *argv[])
           ot_response = bit;
 
           std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
-          std::cout << "For party " << i << "acting as OT sender with values" << choices[0] << ", " << choices[1] << ", " << choices[2] << ", " << choices[3] << std::endl;
 
           pl.OT_send(choices);
         }
@@ -199,7 +196,6 @@ int main(int argc, char *argv[])
           // 1, 1 -> 3
           int choice_bit = left + (2 * right);
           ot_response = pl.OT_recv(choice_bit);
-          std::cout << "For party " << i << "acting os OT receiver with choice bit " << choice_bit << ". Got response: " << ot_response << std::endl;
         }
 
         ot_accumulator += ot_response;
@@ -228,7 +224,7 @@ int main(int argc, char *argv[])
   }
 
   // ==================================
-  // OUTPUT RECONSTRUCTION FROM SHARES
+  // OUTPUT GATHERING FROM SHARES
   // ==================================
   std::string output_share = "";
   for (int i = circuit.output_length; i > 0; i--)
@@ -237,7 +233,49 @@ int main(int argc, char *argv[])
     output_share += std::to_string(curr_share);
   }
 
-  std::cout << "Final output share bit-string: " << output_share << std::endl;
+  std::cout << "Self output share is " << output_share << std::endl;
+
+  std::vector<std::string> all_shares;
+  for (int i = 0; i < num_parties; i++)
+  {
+    if (i == my_party)
+    {
+      all_shares.push_back(output_share);
+      continue;
+    }
+
+    auto &pl = peer_links.at(i);
+    pl.GossipSend(output_share);
+  }
+
+  for (int i = 0; i < num_parties; i++)
+  {
+    if (i == my_party)
+    {
+      continue;
+    }
+
+    auto &pl = peer_links.at(i);
+    all_shares.push_back(pl.GossipReceive());
+  }
+
+  // =========================
+  // FINAL XORing
+  // =========================
+
+  std::string final_output = "";
+  for (int i = 0; i < output_share.size(); i++)
+  {
+    int curr_bit = 0;
+    for (int j = 0; j < all_shares.size(); j++)
+    {
+      curr_bit ^= int(all_shares[j][i] - '0');
+    }
+
+    final_output.push_back(static_cast<char>(curr_bit + '0'));
+  }
+
+  std::cout << "Final output is " << final_output << std::endl;
 
   return 0;
 }
@@ -245,11 +283,14 @@ int main(int argc, char *argv[])
 /*
 
 
-111001010000110111001010100101101
-001100010010111110111110011101111
-011010100011011100001010010100111
-111000110001011011111101110100011
-000111010000001110000011011000110
+101001100100110000101000101110111
+101010100101011010011101111001101
+101101000100011011100000101101110
+000110111000111011111100010110111
+001000111101001010101001101100010
+
+1000                           001
+
 
 010000000000000000000000000000000
 

@@ -92,6 +92,24 @@ int get_integer(CryptoPP::Integer *i, std::vector<unsigned char> &data,
 // WRAPPERS
 // ================================================
 
+void FinalGossip_Message::serialize(std::vector<unsigned char> &data)
+{
+  data.push_back((char)MessageType::FinalGossip_Message);
+  put_string(this->bit_string, data);
+}
+
+int FinalGossip_Message::deserialize(std::vector<unsigned char> &data)
+{
+  assert(data[0] == MessageType::FinalGossip_Message);
+
+  std::string bit_string;
+  int n = 1;
+  n += get_string(&bit_string, data, n);
+  this->bit_string = bit_string;
+
+  return n;
+}
+
 void InitialShare_Message::serialize(std::vector<unsigned char> &data)
 {
   data.push_back((char)MessageType::InitialShare_Message);
@@ -109,17 +127,6 @@ int InitialShare_Message::deserialize(std::vector<unsigned char> &data)
   this->share_value = std::stoi(share_value_string);
 
   return n;
-}
-
-void Nop_Message::serialize(std::vector<unsigned char> &data)
-{
-  data.push_back((char)MessageType::InitialShare_Message);
-}
-
-int Nop_Message::deserialize(std::vector<unsigned char> &data)
-{
-  assert(data[0] == MessageType::Nop_Message);
-  return 1;
 }
 
 /**

@@ -31,7 +31,7 @@ namespace MessageType
     SenderToReceiver_OTEncryptedValues_Message = 5,
 
     InitialShare_Message = 10,
-    Nop_Message = 11,
+    FinalGossip_Message = 11,
   };
 };
 MessageType::T get_message_type(std::vector<unsigned char> &data);
@@ -125,8 +125,10 @@ struct InitialShare_Message : public Serializable
   int deserialize(std::vector<unsigned char> &data);
 };
 
-struct Nop_Message : public Serializable
+struct FinalGossip_Message : public Serializable
 {
+  std::string bit_string;
+
   void serialize(std::vector<unsigned char> &data);
   int deserialize(std::vector<unsigned char> &data);
 };

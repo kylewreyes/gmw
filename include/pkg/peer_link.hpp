@@ -23,6 +23,10 @@ public:
   void OT_send(std::vector<int> choices);
   int OT_recv(int choice_bit);
 
+  // Final gossip
+  void GossipSend(std::string bit_string);
+  std::string GossipReceive();
+
   CryptoPP::SecByteBlock AES_key;
   CryptoPP::SecByteBlock HMAC_key;
 
