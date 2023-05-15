@@ -18,18 +18,15 @@ NetworkDriverImpl::~NetworkDriverImpl() { io_context.stop(); }
  *
  * @param port Port to listen on.
  */
-void NetworkDriverImpl::listen(int num_connections, int port)
+std::shared_ptr<tcp::socket> NetworkDriverImpl::listen(int port)
 {
-  for (int i = 0; i < num_connections; i++)
-  {
-    tcp::acceptor acceptor(this->io_context, tcp::endpoint(tcp::v4(), port));
-    auto s = std::make_shared<tcp::socket>(io_context);
-    acceptor.accept(*s);
-    std::string remote_info = s->remote_endpoint().address().to_string() + ":" +
-                              std::to_string(s->remote_endpoint().port());
-    std::cout << "Party listening on port " << port << "got connection from " << remote_info << std::endl;
-    sockets.push_back(s);
-  }
+  tcp::acceptor acceptor(this->io_context, tcp::endpoint(tcp::v4(), port));
+  auto s = std::make_shared<tcp::socket>(io_context);
+  acceptor.accept(*s);
+  std::string remote_info = s->remote_endpoint().address().to_string() + ":" +
+                            std::to_string(s->remote_endpoint().port());
+  std::cout << "Party listening on port " << port << "got connection from " << remote_info << std::endl;
+  return s;
 }
 
 /**
@@ -38,17 +35,16 @@ void NetworkDriverImpl::listen(int num_connections, int port)
  * @param address Address to connect to.
  * @param port Port to conect to.
  */
-void NetworkDriverImpl::connect(int other_party, std::string address, int port)
+std::shared_ptr<tcp::socket> NetworkDriverImpl::connect(int other_party, std::string address, int port)
 {
   auto s = std::make_shared<tcp::socket>(io_context);
-  sockets.push_back(s);
 
   while (true)
   {
     try
     {
       s->connect(tcp::endpoint(boost::asio::ip::address::from_string(address), port));
-      break;
+      return s;
     }
     catch (boost::wrapexcept<boost::system::system_error> &e)
     {

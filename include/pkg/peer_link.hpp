@@ -9,18 +9,17 @@
 class PeerLink
 {
 public:
-  PeerLink(std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver);
-  bool is_send_first = 0;
+  PeerLink(std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver);
 
-  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> SendFirstHandleKeyExchange();
-  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> ReadFirstHandleKeyExchange();
-
-  std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+  void SendFirstHandleKeyExchange();
+  void ReadFirstHandleKeyExchange();
 
   CryptoPP::SecByteBlock AES_key;
   CryptoPP::SecByteBlock HMAC_key;
 
 private:
+  std::shared_ptr<boost::asio::ip::tcp::socket> socket;
+
   std::shared_ptr<NetworkDriver> network_driver;
   std::shared_ptr<CryptoDriver> crypto_driver;
 };

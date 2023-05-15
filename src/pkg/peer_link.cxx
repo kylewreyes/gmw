@@ -17,14 +17,14 @@ namespace
 /**
  * Constructor. Note that the OT_driver is left uninitialized.
  */
-PeerLink::PeerLink(std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver)
+PeerLink::PeerLink(std::shared_ptr<boost::asio::ip::tcp::socket> socket, std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver)
 {
+  this->socket = socket;
   this->network_driver = network_driver;
   this->crypto_driver = crypto_driver;
 }
 
-std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerLink::ReadFirstHandleKeyExchange()
+void PeerLink::ReadFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
@@ -51,15 +51,15 @@ PeerLink::ReadFirstHandleKeyExchange()
       this->crypto_driver->AES_generate_key(DH_shared_key);
   CryptoPP::SecByteBlock HMAC_key =
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
-  std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock> keys = std::make_pair(AES_key, HMAC_key);
-  return keys;
+
+  this->AES_key = AES_key;
+  this->HMAC_key = HMAC_key;
 }
 
 /**
  * Handle key exchange with evaluator
  */
-std::pair<CryptoPP::SecByteBlock, CryptoPP::SecByteBlock>
-PeerLink::SendFirstHandleKeyExchange()
+void PeerLink::SendFirstHandleKeyExchange()
 {
   // Generate private/public DH keys
   auto dh_values = this->crypto_driver->DH_initialize();
@@ -86,6 +86,7 @@ PeerLink::SendFirstHandleKeyExchange()
       this->crypto_driver->AES_generate_key(DH_shared_key);
   CryptoPP::SecByteBlock HMAC_key =
       this->crypto_driver->HMAC_generate_key(DH_shared_key);
-  auto keys = std::make_pair(AES_key, HMAC_key);
-  return keys;
+
+  this->AES_key = AES_key;
+  this->HMAC_key = HMAC_key;
 }

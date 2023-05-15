@@ -58,101 +58,72 @@ int main(int argc, char *argv[])
 
   // We only need to clean this up at the end
   // TODO: Might need a mutex for sockets coz more than 1 thread is accessing it at the same time
-  std::thread listen_thread([network_driver, my_party, my_port]()
-                            {
-        std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections" << std::endl;
-        network_driver->listen(my_party, my_port); });
+  // std::thread listen_thread([network_driver, my_party, my_port]()
+  //                           {
+  //       std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections" << std::endl;
+  //       network_driver->listen(my_party, my_port); });
 
   // ==========================
-  // ESTABLISH CONNECTIONS
+  // ESTABLISH SOCKETS
   // ==========================
-  for (int i = my_party + 1; i < num_parties; i++)
+
+  // Map from party index to their socket
+  std::unordered_map<int, std::shared_ptr<boost::asio::ip::tcp::socket>> sockets;
+
+  // Do my_party number of listens
+  for (int i = 0; i < my_party; i++)
   {
-    auto addr_parts = parse_addr(addrs[i]);
-
-    // Need to make the connection to peer i
-    network_driver->connect(i, addr_parts.first, addr_parts.second);
-
-    std::cout << "Party " << my_party << " successfully connected to peer " << i << std::endl;
+    std::cout << "Listening for party " << i << std::endl;
+    auto socket = network_driver->listen(my_port);
+    sockets[i] = socket;
   }
 
-  // TODO: Replace this with a join and also maybe move this further down?
-  std::this_thread::sleep_for(std::chrono::seconds(5));
+  // Then the rest should be connections
+  for (int i = my_party + 1; i < num_parties; i++)
+  {
+    std::cout << "Connecting to party " << i << std::endl;
+    auto addr_parts = parse_addr(addrs[i]);
+    auto socket = network_driver->connect(i, addr_parts.first, addr_parts.second);
+
+    // It seems that if everybody calls connect() to a party at the same time, then that party
+    // can't respond to everyone, and things fail. This seems to fix it... :(
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    sockets[i] = socket;
+  }
 
   // ===========================
   // SETUP PEER LINKS
   // ===========================
 
-  std::vector<PeerLink> peer_links;
-  for (int i = 0; i < num_parties; i++)
+  std::unordered_map<int, PeerLink> peer_links;
+  for (auto &[other_party, socket] : sockets)
   {
-    if (i == my_party)
-    {
-      continue;
-    }
-
-    peer_links.push_back(PeerLink(network_driver, crypto_driver));
-  }
-
-  // Record in the peer links which ones are supposed to send first
-  int peer_link_idx = 0;
-  for (int i = my_party + 1; i < num_parties; i++)
-  {
-    auto &pl = peer_links[peer_link_idx++];
-    pl.is_send_first = true;
-  }
-
-  for (int i = 0; i < my_party; i++)
-  {
-    auto &pl = peer_links[peer_link_idx++];
-    pl.is_send_first = false;
-  }
-
-  if (peer_links.size() != network_driver->sockets.size())
-  {
-    throw std::runtime_error("peer links size must match sockets size, i.e. num_parties - 1");
-  }
-
-  // Assign a socket to every PeerLink
-  // After this point, we should only have to deal with PeerLinks
-  int socket_index = 0;
-  for (PeerLink &pl : peer_links)
-  {
-    // TODO: How do you know that the appropriate peer links match up with the appropriate sockets??
-    pl.socket = network_driver->sockets[socket_index++];
+    auto pl = PeerLink(socket, network_driver, crypto_driver);
+    peer_links.emplace(other_party, pl);
   }
 
   // ==============================
   // KEY EXCHANGE
   // ==============================
 
-  // TODO: 
-  // Option 1: Have (n - 1) threads. Each thread has some kind of receive and 
-  // send queue to allow communication between the main and PeerLink thread.
-  // Option 2: Don't spawn threads. Do key exchange and reshare in sequential predefined order.
-  std::vector<std::thread> threads;
-
-  for (PeerLink &pl : peer_links)
+  // Same trick. my_party number of listens, followed by the rest being sends
+  for (int i = 0; i < my_party; i++)
   {
-    if (pl.is_send_first)
-    {
-      threads.push_back(std::thread([&pl]()
-                                    { pl.SendFirstHandleKeyExchange(); }));
-    }
-    else
-    {
-      threads.push_back(std::thread([&pl]()
-                                    { pl.ReadFirstHandleKeyExchange(); }));
-    }
+    auto pl = peer_links.at(i);
+
+    std::cout << "Doing read-first key exchange with party " << i << std::endl;
+    pl.ReadFirstHandleKeyExchange();
+    std::cout << "AES_key for party " << i << " is " << byteblock_to_string(pl.AES_key) << std::endl;
   }
 
-  for (auto &thr : threads)
+  for (int i = my_party + 1; i < num_parties; i++)
   {
-    thr.join();
-  }
+    auto pl = peer_links.at(i);
 
-  // For the things less than us: listen in a thread, and do key exchange in that thread
-  // For the things greater than us, send in a thread and do key exchange in that thread
+    std::cout << "Doing send-first key exchange with party " << i << std::endl;
+    pl.SendFirstHandleKeyExchange();
+    std::cout << "AES_key for party " << i << " is " << byteblock_to_string(pl.AES_key) << std::endl;
+  }
 
   // ===========================
   // SECRET SHARES
@@ -163,49 +134,10 @@ int main(int argc, char *argv[])
   // ========================
   // Initial wire sharing
   // ========================
-  for (int i = 0; i < input.size(); i++)
-  {
-    InitialWireInput wire_initial_input = input[i];
-
-    int wire_owner = wire_initial_input.party_index;
-
-    if (wire_owner == my_party)
-    {
-      std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
-
-      for (int j = 0; j < num_parties; j++)
-      {
-        int curr_share = shares[j];
-
-        if (j == my_party)
-        {
-          shares[i] = curr_share;
-        }
-        else
-        {
-          // Send over all the peer links
-
-          // Over send_conns send some shares
-          // Over recv_conns send some shares
-
-          // Using which keys?
-          // Need to associate keys with a socket
-          peer_links[i].DispatchShare(curr_share);
-        }
-      }
-    }
-    else
-    {
-      shares[i] = peer_links[i].ReceiveShare();
-    }
-  }
 
   // =====================
   // GMW Circuit evaluation
   // ======================
-
-  // Clean up the listener thread
-  listen_thread.detach();
 
   return 0;
 }
