@@ -11,8 +11,13 @@ class PeerLink
 public:
   PeerLink(std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::shared_ptr<NetworkDriver> network_driver, std::shared_ptr<CryptoDriver> crypto_driver);
 
+  // Key exchange
   void SendFirstHandleKeyExchange();
   void ReadFirstHandleKeyExchange();
+
+  // Initial secret sharing
+  void SendSecretShare(int share);
+  int ReceiveSecretShare();
 
   CryptoPP::SecByteBlock AES_key;
   CryptoPP::SecByteBlock HMAC_key;

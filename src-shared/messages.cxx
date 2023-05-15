@@ -96,7 +96,6 @@ void InitialShare_Message::serialize(std::vector<unsigned char> &data)
 {
   data.push_back((char)MessageType::InitialShare_Message);
 
-  put_string(std::to_string(this->wire_number), data);
   put_string(std::to_string(this->share_value), data);
 }
 
@@ -104,12 +103,8 @@ int InitialShare_Message::deserialize(std::vector<unsigned char> &data)
 {
   assert(data[0] == MessageType::InitialShare_Message);
 
-  std::string wire_number_string;
-  int n = 1;
-  n += get_string(&wire_number_string, data, n);
-  this->wire_number = std::stoi(wire_number_string);
-
   std::string share_value_string;
+  int n = 1;
   n += get_string(&share_value_string, data, n);
   this->share_value = std::stoi(share_value_string);
 

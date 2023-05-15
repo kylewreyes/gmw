@@ -46,22 +46,8 @@ int main(int argc, char *argv[])
   // ===============================
   // PREPARE TO CONNECT TO PEERS
   // ===============================
-  // TODO: DO WE STILL NEED THIS?
-  std::unordered_map<std::string, int> addr_mapping;
-  for (int i = 0; i < addrs.size(); i++)
-  {
-    addr_mapping[addrs[i]] = i;
-  }
-
   std::shared_ptr<NetworkDriverImpl> network_driver = std::make_shared<NetworkDriverImpl>();
   std::shared_ptr<CryptoDriver> crypto_driver = std::make_shared<CryptoDriver>();
-
-  // We only need to clean this up at the end
-  // TODO: Might need a mutex for sockets coz more than 1 thread is accessing it at the same time
-  // std::thread listen_thread([network_driver, my_party, my_port]()
-  //                           {
-  //       std::cout << "Party " << my_party << " starting to listen on port " << my_port << " for " << my_party << " connections" << std::endl;
-  //       network_driver->listen(my_party, my_port); });
 
   // ==========================
   // ESTABLISH SOCKETS
@@ -109,7 +95,7 @@ int main(int argc, char *argv[])
   // Same trick. my_party number of listens, followed by the rest being sends
   for (int i = 0; i < my_party; i++)
   {
-    auto pl = peer_links.at(i);
+    auto &pl = peer_links.at(i);
 
     std::cout << "Doing read-first key exchange with party " << i << std::endl;
     pl.ReadFirstHandleKeyExchange();
@@ -118,7 +104,7 @@ int main(int argc, char *argv[])
 
   for (int i = my_party + 1; i < num_parties; i++)
   {
-    auto pl = peer_links.at(i);
+    auto &pl = peer_links.at(i);
 
     std::cout << "Doing send-first key exchange with party " << i << std::endl;
     pl.SendFirstHandleKeyExchange();
@@ -134,6 +120,44 @@ int main(int argc, char *argv[])
   // ========================
   // Initial wire sharing
   // ========================
+  for (int i = 0; i < input.size(); i++)
+  {
+    InitialWireInput wire_initial_input = input[i];
+
+    int wire_owner = wire_initial_input.party_index;
+    int wire_value = wire_initial_input.value;
+
+    if (wire_owner == my_party)
+    {
+      std::cout << "I am owner for wire " << i << std::endl;
+
+      std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
+
+      for (int j = 0; j < num_parties; j++)
+      {
+        int curr_share = shares[j];
+
+        if (j == my_party)
+        {
+          shares[i] = curr_share;
+        }
+        else
+        {
+          std::cout << "Sending secret share of " << curr_share << " to party " << j << std::endl;
+          auto &pl = peer_links.at(j);
+          pl.SendSecretShare(curr_share);
+        }
+      }
+    }
+    else
+    {
+      std::cout << "Receiving secret share for wire " << i << " from party " << wire_owner << std::endl;
+      auto &pl = peer_links.at(wire_owner);
+      auto my_share = pl.ReceiveSecretShare();
+
+      shares[i] = my_share;
+    }
+  }
 
   // =====================
   // GMW Circuit evaluation

@@ -119,7 +119,6 @@ struct SenderToReceiver_OTEncryptedValues_Message : public Serializable
 
 struct InitialShare_Message : public Serializable
 {
-  int wire_number;
   int share_value;
 
   void serialize(std::vector<unsigned char> &data);

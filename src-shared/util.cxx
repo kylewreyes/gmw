@@ -1,5 +1,8 @@
 #include "../include-shared/util.hpp"
 
+#include <crypto++/rng.h>
+#include <crypto++/osrng.h>
+
 using namespace CryptoPP;
 
 /**
@@ -140,10 +143,8 @@ std::pair<std::string, int> parse_addr(std::string str)
  */
 int generate_bit()
 {
-  // TODO: Fix
-  // CryptoPP::AutoSeededRandomPool rng;
-  // return rng.GenerateBit();
-  return 1;
+  CryptoPP::AutoSeededRandomPool rng;
+  return rng.GenerateBit();
 }
 
 /**

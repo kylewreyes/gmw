@@ -2,6 +2,7 @@
 
 #include "../../include-shared/constants.hpp"
 #include "../../include-shared/util.hpp"
+#include "../../include-shared/messages.hpp"
 #include "../../include-shared/logger.hpp"
 
 /*
@@ -22,6 +23,33 @@ PeerLink::PeerLink(std::shared_ptr<boost::asio::ip::tcp::socket> socket, std::sh
   this->socket = socket;
   this->network_driver = network_driver;
   this->crypto_driver = crypto_driver;
+}
+
+// void SendSecretShare(int share);
+// int ReceiveSecretShare();
+
+void PeerLink::SendSecretShare(int share)
+{
+  InitialShare_Message msg;
+  msg.share_value = share;
+
+  std::vector<unsigned char> bytes = this->crypto_driver->encrypt_and_tag(this->AES_key, this->HMAC_key, &msg);
+  this->network_driver->socket_send(this->socket, bytes);
+}
+
+int PeerLink::ReceiveSecretShare()
+{
+  auto bytes = this->network_driver->socket_read(socket);
+  auto [plain_bytes, verified] = crypto_driver->decrypt_and_verify(AES_key, HMAC_key, bytes);
+  if (!verified)
+  {
+    throw std::runtime_error("Error verifying secret share reception message");
+  }
+
+  InitialShare_Message msg;
+  msg.deserialize(plain_bytes);
+
+  return msg.share_value;
 }
 
 void PeerLink::ReadFirstHandleKeyExchange()
