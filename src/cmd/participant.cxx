@@ -131,11 +131,10 @@ int main(int argc, char *argv[])
     {
       std::cout << "OWNER: wire " << i << std::endl;
 
-      std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
-
+      std::vector<int> wire_shares = sd.generate_shares(wire_initial_input.value);
       for (int j = 0; j < num_parties; j++)
       {
-        int curr_share = shares[j];
+        int curr_share = wire_shares[j];
 
         if (j == my_party)
         {
@@ -173,6 +172,8 @@ int main(int argc, char *argv[])
     }
     else if (g.type == GateType::AND_GATE)
     {
+      std::cout << "Executing AND gate" << std::endl;
+
       int ot_accumulator = 0;
 
       for (int i = 0; i < num_parties; i++)
@@ -190,6 +191,8 @@ int main(int argc, char *argv[])
           ot_response = bit;
 
           std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
+          std::cout << "For party " << i << "acting as OT sender with values" << choices[0] << ", " << choices[1] << ", " << choices[2] << ", " << choices[3] << std::endl;
+
           pl.OT_send(choices);
         }
         else
@@ -200,6 +203,7 @@ int main(int argc, char *argv[])
           // 1, 1 -> 3
           int choice_bit = left + (2 * right);
           ot_response = pl.OT_recv(choice_bit);
+          std::cout << "For party " << i << "acting os OT receiver with choice bit " << choice_bit << ". Got response: " << ot_response << std::endl;
         }
 
         ot_accumulator += ot_response;
