@@ -42,11 +42,9 @@ void NetworkDriverImpl::listen(int num_connections, int port)
  * @param address Address to connect to.
  * @param port Port to conect to.
  */
-void NetworkDriverImpl::connect(int other_party, std::string address, int port)
+void NetworkDriverImpl::connect(int other_party, std::string address,
+                                int port)
 {
-  if (address == "localhost")
-    address = "127.0.0.1";
-
   std::shared_ptr<boost::asio::ip::tcp::socket> s;
 
   auto it = send_conns.find(other_party);
