@@ -214,7 +214,6 @@ void PeerLink::SendFirstHandleKeyExchange()
   std::vector<unsigned char> garbler_public_value_data;
   garbler_public_value_s.serialize(garbler_public_value_data);
   network_driver->socket_send(socket, garbler_public_value_data);
-  std::cout << "sent!" << std::endl;
 
   // Listen for g^a
   std::vector<unsigned char> evaluator_public_value_data =

@@ -4,6 +4,7 @@
 #include <string>
 #include <unordered_map>
 #include <future>
+#include <random>
 #include <thread> // std::this_thread::sleep_for
 #include <chrono> // std::chrono::seconds
 
@@ -27,14 +28,14 @@ int main(int argc, char *argv[])
   if (!(argc == 5))
   {
     std::cout
-        << "Usage: ./participant <my party> <addr file> <circuit file> <input file>"
+        << "Usage: ./participant <addr file> <circuit file> <input file> <my party>"
         << std::endl;
     return 1;
   }
-  int my_party = std::stoi(argv[1]);
-  std::string addr_file = argv[2];
-  std::string circuit_file = argv[3];
-  std::string input_file = argv[4];
+  std::string addr_file = argv[1];
+  std::string circuit_file = argv[2];
+  std::string input_file = argv[3];
+  int my_party = std::stoi(argv[4]);
 
   Circuit circuit = parse_circuit(circuit_file);
 
@@ -52,6 +53,10 @@ int main(int argc, char *argv[])
   // ==========================
   // ESTABLISH SOCKETS
   // ==========================
+
+  std::random_device rd;
+  std::mt19937 gen(rd());
+  std::uniform_int_distribution<int> dist(0, 250);
 
   // Map from party index to their socket
   std::unordered_map<int, std::shared_ptr<boost::asio::ip::tcp::socket>> sockets;
@@ -73,7 +78,7 @@ int main(int argc, char *argv[])
 
     // It seems that if everybody calls connect() to a party at the same time, then that party
     // can't respond to everyone, and things fail. This seems to fix it... :(
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::this_thread::sleep_for(std::chrono::milliseconds(dist(gen)));
     sockets[i] = socket;
   }
 
