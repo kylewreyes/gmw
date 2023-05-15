@@ -20,7 +20,7 @@ NetworkDriverImpl::~NetworkDriverImpl() { io_context.stop(); }
  */
 std::shared_ptr<tcp::socket> NetworkDriverImpl::listen(int port)
 {
-  tcp::acceptor acceptor(this->io_context, tcp::endpoint(tcp::v4(), port));
+  static tcp::acceptor acceptor(this->io_context, tcp::endpoint(tcp::v4(), port));
   auto s = std::make_shared<tcp::socket>(io_context);
   acceptor.accept(*s);
   std::string remote_info = s->remote_endpoint().address().to_string() + ":" +

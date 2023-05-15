@@ -4,7 +4,6 @@
 #include <string>
 #include <unordered_map>
 #include <future>
-#include <random>
 #include <thread> // std::this_thread::sleep_for
 #include <chrono> // std::chrono::seconds
 
@@ -54,10 +53,6 @@ int main(int argc, char *argv[])
   // ESTABLISH SOCKETS
   // ==========================
 
-  std::random_device rd;
-  std::mt19937 gen(rd());
-  std::uniform_int_distribution<int> dist(0, 250);
-
   // Map from party index to their socket
   std::unordered_map<int, std::shared_ptr<boost::asio::ip::tcp::socket>> sockets;
 
@@ -70,15 +65,11 @@ int main(int argc, char *argv[])
   }
 
   // Then the rest should be connections
-  for (int i = my_party + 1; i < num_parties; i++)
+  for (int i = num_parties - 1; i >= my_party + 1; i--)
   {
     std::cout << "Connecting to party " << i << std::endl;
     auto addr_parts = parse_addr(addrs[i]);
     auto socket = network_driver->connect(i, addr_parts.first, addr_parts.second);
-
-    // It seems that if everybody calls connect() to a party at the same time, then that party
-    // can't respond to everyone, and things fail. This seems to fix it... :(
-    std::this_thread::sleep_for(std::chrono::milliseconds(dist(gen)));
     sockets[i] = socket;
   }
 
@@ -107,7 +98,7 @@ int main(int argc, char *argv[])
     std::cout << "AES_key for party " << i << " is " << byteblock_to_string(pl.AES_key) << std::endl;
   }
 
-  for (int i = my_party + 1; i < num_parties; i++)
+  for (int i = num_parties - 1; i >= my_party + 1; i--)
   {
     auto &pl = peer_links.at(i);
 
@@ -250,3 +241,17 @@ int main(int argc, char *argv[])
 
   return 0;
 }
+
+/*
+
+
+111001010000110111001010100101101
+001100010010111110111110011101111
+011010100011011100001010010100111
+111000110001011011111101110100011
+000111010000001110000011011000110
+
+010000000000000000000000000000000
+
+
+*/
