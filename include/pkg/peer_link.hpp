@@ -19,6 +19,10 @@ public:
   void SendSecretShare(int share);
   int ReceiveSecretShare();
 
+  // OT
+  void OT_send(std::vector<int> choices);
+  int OT_recv(int choice_bit);
+
   CryptoPP::SecByteBlock AES_key;
   CryptoPP::SecByteBlock HMAC_key;
 

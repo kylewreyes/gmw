@@ -67,7 +67,6 @@ void NetworkDriverImpl::disconnect(int other_party)
 
 void NetworkDriverImpl::socket_send(std::shared_ptr<boost::asio::ip::tcp::socket> sock, std::vector<unsigned char> data)
 {
-  std::cout << "calling socket send" << std::endl;
   int length = htonl(data.size());
   boost::asio::write(*sock,
                      boost::asio::buffer(&length, sizeof(int)));
@@ -84,7 +83,6 @@ std::vector<unsigned char> NetworkDriverImpl::socket_read(std::shared_ptr<boost:
   // read length
   int length;
   boost::system::error_code error;
-  std::cout << "going to read from the socket the first amount" << std::endl;
   boost::asio::read(*sock,
                     boost::asio::buffer(&length, sizeof(int)),
                     boost::asio::transfer_exactly(sizeof(int)), error);
@@ -95,7 +93,6 @@ std::vector<unsigned char> NetworkDriverImpl::socket_read(std::shared_ptr<boost:
   length = ntohl(length);
 
   // read message
-  std::cout << "going to read from the socket the message" << std::endl;
   std::vector<unsigned char> data;
   data.resize(length);
   boost::asio::read(*sock, boost::asio::buffer(data),

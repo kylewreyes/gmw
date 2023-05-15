@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 
     if (wire_owner == my_party)
     {
-      std::cout << "I am owner for wire " << i << std::endl;
+      std::cout << "OWNER: wire " << i << std::endl;
 
       std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
 
@@ -151,10 +151,10 @@ int main(int argc, char *argv[])
     }
     else
     {
-      std::cout << "Receiving secret share for wire " << i << " from party " << wire_owner << std::endl;
       auto &pl = peer_links.at(wire_owner);
       auto my_share = pl.ReceiveSecretShare();
 
+      std::cout << "Received secret share " << my_share << " for wire " << i << " from party " << wire_owner << std::endl;
       shares[i] = my_share;
     }
   }
@@ -162,6 +162,82 @@ int main(int argc, char *argv[])
   // =====================
   // GMW Circuit evaluation
   // ======================
+  for (Gate g : circuit.gates)
+  {
+    int left = shares[g.lhs];
+    int right = shares[g.rhs];
+
+    if (g.type == GateType::XOR_GATE)
+    {
+      shares[g.output] = (left ^ right);
+    }
+    else if (g.type == GateType::AND_GATE)
+    {
+      int ot_accumulator = 0;
+
+      for (int i = 0; i < num_parties; i++)
+      {
+        if (my_party == i)
+        {
+          continue;
+        }
+        auto &pl = peer_links.at(i);
+
+        int ot_response;
+        if (my_party < i)
+        {
+          int bit = generate_bit();
+          ot_response = bit;
+
+          std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
+          pl.OT_send(choices);
+        }
+        else
+        {
+          // 0, 0 -> 0
+          // 1, 0 -> 1
+          // 0, 1 -> 2
+          // 1, 1 -> 3
+          int choice_bit = left + (2 * right);
+          ot_response = pl.OT_recv(choice_bit);
+        }
+
+        ot_accumulator += ot_response;
+      }
+
+      ot_accumulator += (left * right);
+      ot_accumulator = ot_accumulator % 2;
+
+      shares[g.output] = ot_accumulator;
+    }
+    else if (g.type == GateType::NOT_GATE)
+    {
+      if (my_party == 0)
+      {
+        shares[g.output] = 1 - left;
+      }
+      else
+      {
+        shares[g.output] = left;
+      }
+    }
+    else
+    {
+      throw std::runtime_error("Invalid gate type found");
+    }
+  }
+
+  // ==================================
+  // OUTPUT RECONSTRUCTION FROM SHARES
+  // ==================================
+  std::string output_share = "";
+  for (int i = circuit.output_length; i > 0; i--)
+  {
+    auto curr_share = shares.at(i);
+    output_share += std::to_string(curr_share);
+  }
+
+  std::cout << "Final output share bit-string: " << output_share << std::endl;
 
   return 0;
 }
