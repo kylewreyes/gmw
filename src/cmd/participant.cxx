@@ -155,40 +155,42 @@ int main(int argc, char *argv[])
   // ========================
   // Initial wire sharing
   // ========================
-  // for (int i = 0; i < input.size(); i++)
-  // {
-  //   InitialWireInput wire_initial_input = input[i];
+  for (int i = 0; i < input.size(); i++)
+  {
+    InitialWireInput wire_initial_input = input[i];
 
-  //   int wire_owner = wire_initial_input.party_index;
+    int wire_owner = wire_initial_input.party_index;
 
-  //   if (wire_owner == my_party)
-  //   {
-  //     std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
+    if (wire_owner == my_party)
+    {
+      std::vector<int> shares = sd.generate_shares(wire_initial_input.value);
 
-  //     for (int j = 0; j < num_parties; j++)
-  //     {
-  //       int curr_share = shares[j];
+      for (int j = 0; j < num_parties; j++)
+      {
+        int curr_share = shares[j];
 
-  //       if (j == my_party)
-  //       {
-  //         shares[i] = curr_share;
-  //       }
-  //       else
-  //       {
-  //         // Over send_conns send some shares
-  //         // Over recv_conns send some shares
+        if (j == my_party)
+        {
+          shares[i] = curr_share;
+        }
+        else
+        {
+          // Send over all the peer links
 
-  //         // Using which keys?
-  //         // Need to associate keys with a socket
-  //         peer_links[i].DispatchShare(curr_share);
-  //       }
-  //     }
-  //   }
-  //   else
-  //   {
-  //     shares[i] = peer_links[i].ReceiveShare();
-  //   }
-  // }
+          // Over send_conns send some shares
+          // Over recv_conns send some shares
+
+          // Using which keys?
+          // Need to associate keys with a socket
+          peer_links[i].DispatchShare(curr_share);
+        }
+      }
+    }
+    else
+    {
+      shares[i] = peer_links[i].ReceiveShare();
+    }
+  }
 
   // =====================
   // GMW Circuit evaluation
