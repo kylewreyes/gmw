@@ -85,20 +85,21 @@ int main(int argc, char *argv[])
 
   std::vector<std::thread> threads;
 
+  PeerLink pl(network_driver, crypto_driver);
+
   for (int i = my_party + 1; i < num_parties; i++)
   {
-    PeerLink pl(network_driver, crypto_driver);
-
     threads.push_back(std::thread([&pl, i]()
-                                  { pl.SendFirstHandleKeyExchange(i); }));
+                                  { 
+                                    auto keys = pl.SendFirstHandleKeyExchange(i);
+                                    std::cout << "got aes key to be for party " << i << " to be " << byteblock_to_string(keys.first) << std::endl; }));
   }
 
   for (auto s : network_driver->recv_conns)
   {
-    PeerLink pl(network_driver, crypto_driver);
-
     threads.push_back(std::thread([&pl, s]()
-                                  { pl.ReadFirstHandleKeyExchange(s); }));
+                                  { auto keys = pl.ReadFirstHandleKeyExchange(s);
+                                    std::cout << "got aes key to be " << byteblock_to_string(keys.first) << std::endl; }));
   }
 
   for (auto &thr : threads)
