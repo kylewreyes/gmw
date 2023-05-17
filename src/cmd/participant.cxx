@@ -157,8 +157,15 @@ int main(int argc, char *argv[])
   // =====================
   // GMW Circuit evaluation
   // ======================
+  int g_index = 0;
   for (Gate g : circuit.gates)
   {
+    if (g_index % 100 == 0)
+    {
+      std::cout << "Evaluating gate " << g_index << std::endl;
+    }
+    g_index++;
+
     int left = shares[g.lhs];
     int right = shares[g.rhs];
 
@@ -178,14 +185,10 @@ int main(int argc, char *argv[])
         }
         auto &pl = peer_links.at(i);
 
-        int ot_response;
         if (my_party < i)
         {
           int bit = generate_bit();
-          ot_response = bit;
-
           std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
-
           pl.OT_send(choices);
         }
         else
@@ -195,10 +198,10 @@ int main(int argc, char *argv[])
           // 0, 1 -> 2
           // 1, 1 -> 3
           int choice_bit = left + (2 * right);
-          ot_response = pl.OT_recv(choice_bit);
-        }
+          int recv = pl.OT_recv(choice_bit);
 
-        ot_accumulator += ot_response;
+          ot_accumulator += recv;
+        }
       }
 
       ot_accumulator += (left * right);
@@ -208,6 +211,8 @@ int main(int argc, char *argv[])
     }
     else if (g.type == GateType::NOT_GATE)
     {
+      std::cout << "got not gate, lhs and rhs are " << g.lhs << " and " << g.rhs << " and vals are " << left << " and " << right << std::endl;
+
       if (my_party == 0)
       {
         shares[g.output] = 1 - left;
@@ -226,10 +231,17 @@ int main(int argc, char *argv[])
   // ==================================
   // OUTPUT GATHERING FROM SHARES
   // ==================================
+  for (int i = 0; i < circuit.num_wire; i++)
+  {
+    std::cout << "Share " << i << " is " << shares[i] << std::endl;
+  }
+
+  std::cout << "Output length should be " << circuit.output_length << std::endl;
+
   std::string output_share = "";
   for (int i = circuit.output_length; i > 0; i--)
   {
-    auto curr_share = shares.at(i);
+    auto curr_share = shares.at(circuit.num_wire - i);
     output_share += std::to_string(curr_share);
   }
 

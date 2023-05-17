@@ -1,4 +1,6 @@
 #include <crypto++/osrng.h>
+#include <cstdlib>
+#include <iostream>
 
 #include "../../include/drivers/share_driver.hpp"
 
@@ -42,5 +44,12 @@ std::vector<int> ShareDriver::generate_shares(int target)
 
     // Finally, generate our share
     shares[this->my_party] = (xor_other_parties ^ target);
+
+    std::cout << "Generating share for target: " << target << std::endl;
+    for (int share : shares)
+    {
+        std::cout << "Got share to be " << share << std::endl;
+    }
+
     return shares;
 }
