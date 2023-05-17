@@ -259,9 +259,9 @@ int main(int argc, char *argv[])
   // ==================================
   std::string output_share = "";
   std::cout << "OUTPUT SHARES" << std::endl;
-  for (int i = 0; i < circuit.output_length; i++)
+  for (int i = circuit.output_length; i > 0; i--)
   {
-    auto curr_share = shares.at(circuit.num_wire - i - 1);
+    auto curr_share = shares.at(circuit.num_wire - i);
     std::cout << curr_share << " from " << circuit.num_gate - i - 1 << std::endl;
     output_share += std::to_string(curr_share);
   }
