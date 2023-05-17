@@ -92,19 +92,14 @@ int main(int argc, char *argv[])
   for (int i = 0; i < my_party; i++)
   {
     auto &pl = peer_links.at(i);
-
-    std::cout << "Doing read-first key exchange with party " << i << std::endl;
     pl.ReadFirstHandleKeyExchange();
-    std::cout << "AES_key for party " << i << " is " << byteblock_to_string(pl.AES_key) << std::endl;
   }
 
   for (int i = num_parties - 1; i >= my_party + 1; i--)
   {
     auto &pl = peer_links.at(i);
 
-    std::cout << "Doing send-first key exchange with party " << i << std::endl;
     pl.SendFirstHandleKeyExchange();
-    std::cout << "AES_key for party " << i << " is " << byteblock_to_string(pl.AES_key) << std::endl;
   }
 
   // ===========================
@@ -135,6 +130,7 @@ int main(int argc, char *argv[])
         if (j == my_party)
         {
           shares[i] = curr_share;
+          std::cout << "Our share " << curr_share << std::endl;
         }
         else
         {
@@ -157,15 +153,8 @@ int main(int argc, char *argv[])
   // =====================
   // GMW Circuit evaluation
   // ======================
-  int g_index = 0;
   for (Gate g : circuit.gates)
   {
-    if (g_index % 100 == 0)
-    {
-      std::cout << "Evaluating gate " << g_index << std::endl;
-    }
-    g_index++;
-
     int left = shares[g.lhs];
     int right = shares[g.rhs];
 
@@ -185,34 +174,71 @@ int main(int argc, char *argv[])
         }
         auto &pl = peer_links.at(i);
 
+        int ot_response;
         if (my_party < i)
         {
           int bit = generate_bit();
-          std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
+          ot_response = bit;
+
+          std::cout << "Random bit " << ot_response;
+          std::cout << "Sending options" << std::to_string(bit) << " " << std::to_string(bit ^ right) << " " << std::to_string(bit ^ left) << " " << std::to_string(bit ^ left ^ right) << std::endl;
+          std::vector<int> choices = {bit, bit ^ right, bit ^ left, bit ^ left ^ right};
+
+          // shares[g.output] =
+
+          // std::vector<int> choices = {bit, bit ^ left, bit ^ right, bit ^ left ^ right};
+
           pl.OT_send(choices);
         }
         else
         {
-          // 0, 0 -> 0
-          // 1, 0 -> 1
-          // 0, 1 -> 2
-          // 1, 1 -> 3
-          int choice_bit = left + (2 * right);
-          int recv = pl.OT_recv(choice_bit);
+          // // 0, 0 -> 0
+          // // 1, 0 -> 1
+          // // 0, 1 -> 2
+          // // 1, 1 -> 3
+          // int choice_bit = left + (2 * right);
+          // ot_response = pl.OT_recv(choice_bit);
+          int choice_bit;
+          if (left == 0)
+          {
+            if (right == 0)
+            {
+              choice_bit = 0;
+            }
+            else
+            {
+              choice_bit = 2;
+            }
+          }
+          else
+          {
+            if (right == 0)
+            {
+              choice_bit = 1;
+            }
+            else
+            {
+              choice_bit = 3;
+            }
+          }
 
-          ot_accumulator += recv;
+          ot_response = pl.OT_recv(choice_bit);
+
+          std::cout << "Received bit " << ot_response << " of choice " << choice_bit << std::endl;
         }
+
+        ot_accumulator += ot_response;
       }
 
       ot_accumulator += (left * right);
       ot_accumulator = ot_accumulator % 2;
 
+      std::cout << "Acc " << ot_accumulator << std::endl;
+
       shares[g.output] = ot_accumulator;
     }
     else if (g.type == GateType::NOT_GATE)
     {
-      std::cout << "got not gate, lhs and rhs are " << g.lhs << " and " << g.rhs << " and vals are " << left << " and " << right << std::endl;
-
       if (my_party == 0)
       {
         shares[g.output] = 1 - left;
@@ -231,17 +257,12 @@ int main(int argc, char *argv[])
   // ==================================
   // OUTPUT GATHERING FROM SHARES
   // ==================================
-  for (int i = 0; i < circuit.num_wire; i++)
-  {
-    std::cout << "Share " << i << " is " << shares[i] << std::endl;
-  }
-
-  std::cout << "Output length should be " << circuit.output_length << std::endl;
-
   std::string output_share = "";
-  for (int i = circuit.output_length; i > 0; i--)
+  std::cout << "OUTPUT SHARES" << std::endl;
+  for (int i = 0; i < circuit.output_length; i++)
   {
-    auto curr_share = shares.at(circuit.num_wire - i);
+    auto curr_share = shares.at(circuit.num_wire - i - 1);
+    std::cout << curr_share << " from " << circuit.num_gate - i - 1 << std::endl;
     output_share += std::to_string(curr_share);
   }
 
@@ -281,10 +302,13 @@ int main(int argc, char *argv[])
     int curr_bit = 0;
     for (int j = 0; j < all_shares.size(); j++)
     {
+      std::cout << "Sanity check: " << int(all_shares[j][i] - '0') << std::endl;
       curr_bit ^= int(all_shares[j][i] - '0');
     }
 
-    final_output.push_back(static_cast<char>(curr_bit + '0'));
+    char x = static_cast<char>(curr_bit + '0');
+    std::cout << "Final sanity check " << x << std::endl;
+    final_output.push_back(x);
   }
 
   std::cout << "Final output is " << final_output << std::endl;
